@@ -21,6 +21,8 @@ function fullUrl(config: LoggableConfig): string {
   return base.replace(/\/+$/, '') + '/' + url.replace(/^\/+/, '');
 }
 
+const LOG_BODY_CHAR_LIMIT = 4000;
+
 function safeBody(body: unknown): unknown {
   if (typeof body === 'string') {
     try {
@@ -30,6 +32,17 @@ function safeBody(body: unknown): unknown {
     }
   }
   return body;
+}
+
+// Large list responses (e.g. hundreds of warehouse/farm records) can produce
+// megabytes of JSON — console.log-ing that whole object blocks the JS thread
+// for seconds. Truncate the printed form; the real data still reaches callers
+// untouched since this only affects what gets logged.
+function loggableBody(body: unknown): unknown {
+  const printed = safeBody(body);
+  const asString = typeof printed === 'string' ? printed : JSON.stringify(printed);
+  if (!asString || asString.length <= LOG_BODY_CHAR_LIMIT) return printed;
+  return `${asString.slice(0, LOG_BODY_CHAR_LIMIT)}… (${asString.length} chars total, truncated)`;
 }
 
 function redactHeaders(headers: unknown): Record<string, unknown> | undefined {
@@ -70,7 +83,7 @@ export function logResponse(response: AxiosResponse, durationMs: number): void {
   console.log(
     `${TAG} ← ${response.status} ${method} ${fullUrl(cfg)} (${durationMs}ms)`,
   );
-  console.log(`${TAG}   response:`, safeBody(response.data));
+  console.log(`${TAG}   response:`, loggableBody(response.data));
 }
 
 export function logError(error: AxiosError, durationMs: number): void {
@@ -80,6 +93,6 @@ export function logError(error: AxiosError, durationMs: number): void {
   const status = error.response?.status ?? 'no-response';
   console.log(`${TAG} ✗ ${status} ${method} ${url} (${durationMs}ms) — ${error.message}`);
   if (error.response?.data !== undefined) {
-    console.log(`${TAG}   error body:`, safeBody(error.response.data));
+    console.log(`${TAG}   error body:`, loggableBody(error.response.data));
   }
 }

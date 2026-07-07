@@ -10,7 +10,7 @@ export const stationApi = {
     return api<RawList<RawFarm>>({
       method: 'GET',
       url: '/api/resource/Farm',
-      params: { fields: '["*"]', limit: 1000 },
+      params: { fields: '["name","farm_name"]', limit: 1000 },
     });
   },
   fetchWarehouses(): Promise<RawList<RawWarehouse>> {
@@ -18,7 +18,7 @@ export const stationApi = {
       method: 'GET',
       url: '/api/resource/Warehouse',
       params: {
-        fields: '["*"]',
+        fields: '["name","disabled"]',
         filters: '[["disabled","=","0"]]',
         limit: 5000,
       },
