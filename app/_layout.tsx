@@ -10,6 +10,7 @@ import 'react-native-gesture-handler';
 import { TenantProvider } from '@/src/core/tenant/tenant-context';
 import { ToastProvider } from '@/src/core/ui/Toast';
 import { OfflineBanner } from '@/src/core/ui/OfflineBanner';
+import { ProfileDrawer } from '@/src/core/ui/ProfileDrawer';
 import { useAuthStore } from '@/src/core/auth/store';
 import { useNetworkStore } from '@/src/core/network/store';
 
@@ -23,6 +24,8 @@ export default function RootLayout() {
     Poppins_600SemiBold,
     Poppins_700Bold,
   });
+  // eslint-disable-next-line no-console
+  console.log('[boot] render', { fontsLoaded });
 
   const hydrate = useAuthStore((s) => s.hydrate);
   const hasSession = useAuthStore((s) => s.hasSession);
@@ -33,8 +36,17 @@ export default function RootLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    hydrate();
+    // eslint-disable-next-line no-console
+    console.log('[boot] calling hydrate()');
+    hydrate().then(
+      () => console.log('[boot] hydrate() resolved'),
+      (err) => console.log('[boot] hydrate() rejected', err),
+    );
+    // eslint-disable-next-line no-console
+    console.log('[boot] calling initNetwork()');
     initNetwork();
+    // eslint-disable-next-line no-console
+    console.log('[boot] initNetwork() returned (fire-and-forget)');
   }, [hydrate, initNetwork]);
 
   useEffect(() => {
@@ -79,6 +91,8 @@ export default function RootLayout() {
             </Stack>
             {/* Sticky offline indicator across every screen. */}
             <OfflineBanner />
+            {/* Slide-out profile menu, triggered from each screen's header. */}
+            <ProfileDrawer />
           </ToastProvider>
         </TenantProvider>
       </SafeAreaProvider>

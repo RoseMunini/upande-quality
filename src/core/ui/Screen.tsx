@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -10,12 +11,11 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, fontFamily, fontSize, spacing } from '@/src/core/theme';
 import { Button } from './Button';
+import { useProfileDrawerStore } from './drawer-store';
 
-// Single-farm build: no drawer/hamburger menu (only 3 routes, all reachable
-// from the bottom tab bar), so `hideMenu` is accepted for call-site
-// compatibility but has no effect — kept in case a real drawer comes back.
 type Props = {
   title?: string;
   loading?: boolean;
@@ -36,12 +36,14 @@ export function Screen({
   error,
   onRetry,
   onRefresh,
+  hideMenu,
   scroll = true,
   contentPadded = true,
   children,
   footer,
 }: Props) {
   const [refreshing, setRefreshing] = useState(false);
+  const openDrawer = useProfileDrawerStore((s) => s.open);
 
   const handleRefresh = onRefresh
     ? async () => {
@@ -102,7 +104,13 @@ export function Screen({
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
       {title ? (
         <View style={s.header}>
+          {hideMenu ? null : (
+            <Pressable style={s.menuBtn} onPress={openDrawer} hitSlop={8}>
+              <Ionicons name="menu-outline" size={22} color={COLORS.text} />
+            </Pressable>
+          )}
           <Text style={s.title} numberOfLines={1}>{title}</Text>
+          {hideMenu ? null : <View style={s.menuBtn} />}
         </View>
       ) : null}
       <KeyboardAvoidingView

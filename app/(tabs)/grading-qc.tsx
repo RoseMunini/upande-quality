@@ -1,11 +1,10 @@
 import { Text, TextInput, Pressable, Alert, Modal, View, StyleSheet } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '@/src/core/ui/Screen';
 import { Card } from '@/src/core/ui/Card';
 import { Button } from '@/src/core/ui/Button';
-import { Dropdown } from '@/src/core/ui/Dropdown';
 import { LabeledInput } from '@/src/core/ui/LabeledInput';
 import { COLORS, fontFamily, fontSize, spacing, borderRadius } from '@/src/core/theme';
 import { api } from '@/src/core/api/client';
@@ -23,44 +22,14 @@ const REASONS = [
   'Caterpillar',
 ];
 
-export default function IntakeQcTab() {
-  const section = 'receiving_reject';
-  const [refId, setRefId] = useState('');
-  const [variety, setVariety] = useState('');
-  const [farm, setFarm] = useState('');
-  const [greenhouse, setGreenhouse] = useState('');
-  const [quantity, setQuantity] = useState('');
+export default function GradingQcTab() {
+  const [bunchId, setBunchId] = useState('');
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
-  const [notes, setNotes] = useState('');
+  const [quantity, setQuantity] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
-  const [farms, setFarms] = useState<string[]>([]);
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [lookupNote, setLookupNote] = useState('');
-
-  useEffect(() => {
-    const loadFarms = async () => {
-      try {
-        const res = await api({
-          method: 'GET',
-          url: '/api/method/frappe.client.get_list',
-          params: {
-            doctype: 'Farm',
-            fields: JSON.stringify(['name']),
-            filters: JSON.stringify([['company', 'in', ['XPRESSIONS FLORA LIMITED', 'AFRICA BLOOMS LIMITED', 'BLOOM VALLEY LIMITED', 'SOJANMI SPRINGFIELDS LIMITED']]]),
-            limit_page_length: 100,
-            order_by: 'name asc',
-          },
-          validateStatus: () => true,
-        }) as any;
-        const list = res.message ?? [];
-        setFarms(list.map((f: any) => f.name));
-      } catch {}
-    };
-    loadFarms();
-  }, []);
 
   const openScanner = async () => {
     if (!permission?.granted) {
@@ -78,42 +47,14 @@ export default function IntakeQcTab() {
     if (scanned) return;
     setScanned(true);
     setScanning(false);
-    let bucketId = data.trim();
-    if (bucketId.startsWith('{')) {
+    let id = data.trim();
+    if (id.startsWith('{')) {
       try {
-        const parsed = JSON.parse(bucketId);
-        bucketId = parsed.bucket_id || parsed.id || parsed.name || bucketId;
+        const parsed = JSON.parse(id);
+        id = parsed.bunch_id || parsed.id || parsed.name || id;
       } catch {}
     }
-    setRefId(bucketId);
-    lookupBucket(bucketId);
-  };
-
-  const lookupBucket = async (bucketId: string) => {
-    if (!bucketId.trim()) return;
-    setLookupLoading(true);
-    setLookupNote('');
-    try {
-      const res = await api({
-        method: 'POST',
-        url: '/api/method/get_bucket_details',
-        data: { bucket_id: bucketId.trim() },
-        validateStatus: () => true,
-      }) as any;
-      const details = res.message;
-      if (res.error || !details || !details.found) {
-        setLookupNote('No details found for this bucket — fill in manually.');
-      } else {
-        if (details.variety) setVariety(details.variety);
-        if (details.greenhouse) setGreenhouse(details.greenhouse);
-        if (details.farm && farms.includes(details.farm)) setFarm(details.farm);
-        setLookupNote(`Auto-filled from ${details.found_via === 'stock_entry' ? 'receiving record' : 'bucket registration'}.`);
-      }
-    } catch {
-      setLookupNote('Lookup failed — fill in manually.');
-    } finally {
-      setLookupLoading(false);
-    }
+    setBunchId(id);
   };
 
   const toggleReason = (r: string) => {
@@ -121,6 +62,10 @@ export default function IntakeQcTab() {
   };
 
   const onSubmit = async () => {
+    if (!bunchId.trim()) {
+      Alert.alert('Error', 'Please scan or enter a bunch reference.');
+      return;
+    }
     if (!quantity || parseInt(quantity) <= 0) {
       Alert.alert('Error', 'Please enter a valid quantity.');
       return;
@@ -134,14 +79,19 @@ export default function IntakeQcTab() {
       const res = await api({
         method: 'POST',
         url: '/api/method/create_quality_entry',
-        data: { section, quantity: parseInt(quantity), reason: selectedReasons.join(', '), notes, farm, greenhouse, variety, ref_id: refId },
+        data: {
+          section: 'grading_reject',
+          quantity: parseInt(quantity),
+          reason: selectedReasons.join(', '),
+          ref_id: bunchId,
+        },
         validateStatus: () => true,
       }) as any;
       if (res.error || (res.http_status_code && res.http_status_code >= 400)) {
         Alert.alert('Error', res.error || 'Failed to record reject entry.');
       } else {
         Alert.alert('Success', res.message || 'Reject entry recorded!');
-        setRefId(''); setVariety(''); setQuantity(''); setSelectedReasons([]); setNotes(''); setFarm(''); setGreenhouse('');
+        setBunchId(''); setQuantity(''); setSelectedReasons([]);
       }
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Network error.');
@@ -151,16 +101,15 @@ export default function IntakeQcTab() {
   };
 
   return (
-    <Screen title="Intake QC">
+    <Screen title="Grading">
       <Card>
-        <Text style={s.section}>BUCKET REFERENCE</Text>
+        <Text style={s.section}>BUNCH REFERENCE</Text>
         <View style={{ height: spacing.sm }} />
         <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
           <TextInput
-            value={refId}
-            onChangeText={setRefId}
-            onBlur={() => lookupBucket(refId)}
-            placeholder="e.g. BUCKET-11502"
+            value={bunchId}
+            onChangeText={setBunchId}
+            placeholder="e.g. BUNCH-16656"
             placeholderTextColor={COLORS.textMuted}
             autoCapitalize="characters"
             style={s.input}
@@ -169,44 +118,6 @@ export default function IntakeQcTab() {
             <Ionicons name="camera-outline" size={20} color={COLORS.textOnPrimary} />
           </Pressable>
         </View>
-        {lookupLoading ? <Text style={s.lookupNote}>Looking up bucket…</Text> : null}
-        {!lookupLoading && lookupNote ? <Text style={s.lookupNote}>{lookupNote}</Text> : null}
-      </Card>
-
-      <Card>
-        <Text style={s.section}>DETAILS</Text>
-        <View style={{ height: spacing.sm }} />
-        <LabeledInput
-          label="Variety"
-          iconName="flower-outline"
-          value={variety}
-          onChangeText={setVariety}
-          placeholder="Auto-fills from bucket ref"
-        />
-        <View style={{ height: spacing.md }} />
-        <Dropdown
-          label="Farm"
-          iconName="barn"
-          value={farm || null}
-          options={farms.map((f) => ({ label: f, value: f }))}
-          placeholder="Select farm"
-          onChange={setFarm}
-        />
-        <LabeledInput
-          label="Greenhouse"
-          iconName="home-variant-outline"
-          value={greenhouse}
-          onChangeText={setGreenhouse}
-          placeholder="Greenhouse"
-        />
-        <LabeledInput
-          label="Quantity of stems"
-          iconName="counter"
-          value={quantity}
-          onChangeText={setQuantity}
-          placeholder="Quantity (stems)"
-          keyboardType="number-pad"
-        />
       </Card>
 
       <Card>
@@ -222,14 +133,16 @@ export default function IntakeQcTab() {
             );
           })}
         </View>
-        <View style={{ height: spacing.md }} />
+      </Card>
+
+      <Card>
         <LabeledInput
-          label="Notes"
-          iconName="note-text-outline"
-          value={notes}
-          onChangeText={setNotes}
-          placeholder="Optional"
-          multiline
+          label="Quantity of stems"
+          iconName="counter"
+          value={quantity}
+          onChangeText={setQuantity}
+          placeholder="Quantity (stems)"
+          keyboardType="number-pad"
         />
       </Card>
 
@@ -243,7 +156,7 @@ export default function IntakeQcTab() {
             onBarcodeScanned={onBarcodeScanned} />
           <View style={{ padding: spacing.xl, backgroundColor: '#000' }}>
             <Text style={{ color: '#fff', textAlign: 'center', fontSize: 14, marginBottom: spacing.lg }}>
-              Point camera at the bucket QR code
+              Point camera at the bunch QR code
             </Text>
             <Button label="Cancel" onPress={() => setScanning(false)} color="#333" />
           </View>
@@ -255,7 +168,6 @@ export default function IntakeQcTab() {
 
 const s = StyleSheet.create({
   section: { fontFamily: fontFamily.semiBold, fontSize: fontSize.xs, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.4 },
-  lookupNote: { fontSize: 12, color: COLORS.textMuted, marginTop: spacing.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: { paddingVertical: 7, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, color: COLORS.text, fontSize: 12, overflow: 'hidden' },
   chipActive: { backgroundColor: COLORS.text, color: '#FFFFFF', borderColor: COLORS.text },
