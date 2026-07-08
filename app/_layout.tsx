@@ -24,8 +24,6 @@ export default function RootLayout() {
     Poppins_600SemiBold,
     Poppins_700Bold,
   });
-  // eslint-disable-next-line no-console
-  console.log('[boot] render', { fontsLoaded });
 
   const hydrate = useAuthStore((s) => s.hydrate);
   const hasSession = useAuthStore((s) => s.hasSession);
@@ -36,17 +34,8 @@ export default function RootLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('[boot] calling hydrate()');
-    hydrate().then(
-      () => console.log('[boot] hydrate() resolved'),
-      (err) => console.log('[boot] hydrate() rejected', err),
-    );
-    // eslint-disable-next-line no-console
-    console.log('[boot] calling initNetwork()');
+    hydrate();
     initNetwork();
-    // eslint-disable-next-line no-console
-    console.log('[boot] initNetwork() returned (fire-and-forget)');
   }, [hydrate, initNetwork]);
 
   useEffect(() => {
