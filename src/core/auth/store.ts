@@ -36,20 +36,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   roles: [],
 
   hydrate: async () => {
-    // eslint-disable-next-line no-console
-    console.log('[boot] auth.hydrate: start');
     const [hasSession, roles, email, instanceUrl, fullName] = await Promise.all([
-      authRepository.hasSession().then((v) => (console.log('[boot] auth.hydrate: hasSession done'), v)),
-      authRepository.loadRoles().then((v) => (console.log('[boot] auth.hydrate: loadRoles done'), v)),
-      storage.get(StorageKeys.emailBackup).then((v) => (console.log('[boot] auth.hydrate: emailBackup done'), v)),
-      storage.get(StorageKeys.instanceUrl).then((v) => (console.log('[boot] auth.hydrate: instanceUrl done'), v)),
-      storage.get(StorageKeys.fullName).then((v) => (console.log('[boot] auth.hydrate: fullName done'), v)),
+      authRepository.hasSession(),
+      authRepository.loadRoles(),
+      storage.get(StorageKeys.emailBackup),
+      storage.get(StorageKeys.instanceUrl),
+      storage.get(StorageKeys.fullName),
     ]);
-    // eslint-disable-next-line no-console
-    console.log('[boot] auth.hydrate: Promise.all resolved, calling set()');
     set({ hasSession, hydrated: true, roles, email, instanceUrl, fullName });
-    // eslint-disable-next-line no-console
-    console.log('[boot] auth.hydrate: done');
   },
 
   login: async (email, password, url) => {

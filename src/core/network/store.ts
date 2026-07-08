@@ -29,16 +29,10 @@ let pollTimer: ReturnType<typeof setTimeout> | null = null;
 let appStateSub: { remove: () => void } | null = null;
 
 async function checkConnectivity(): Promise<boolean> {
-  // eslint-disable-next-line no-console
-  console.log('[boot] network.checkConnectivity: calling getNetworkStateAsync');
   try {
     const state = await Network.getNetworkStateAsync();
-    // eslint-disable-next-line no-console
-    console.log('[boot] network.checkConnectivity: got state', state);
     return !!(state.isConnected && state.isInternetReachable !== false);
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.log('[boot] network.checkConnectivity: threw', err);
+  } catch {
     return false;
   }
 }
