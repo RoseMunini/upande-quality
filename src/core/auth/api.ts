@@ -15,26 +15,18 @@ export type LoginRawResponse = {
 };
 
 export async function probeBaseUrl(rawUrl: string): Promise<string> {
-  const trimmed = rawUrl.trim();
+  const trimmed = rawUrl.trim().replace(/\/$/, '');
 
-  // If the caller already specified a protocol, trust it without probing.
+  // If the caller already specified a protocol, trust it as-is.
   if (/^https?:\/\//i.test(trimmed)) {
-    return trimmed.replace(/\/$/, '');
+    return trimmed;
   }
 
-  // No protocol supplied — probe HTTPS, fall back to HTTP.
-  const httpsUrl = `https://${trimmed}`;
-  const config: LoggableConfig = attachStartTime({ method: 'HEAD', url: httpsUrl });
-  logRequest(config);
-  try {
-    const res = await axios.head(httpsUrl, { timeout: 5000 });
-    logResponse({ ...res, config: { ...res.config, ...config } } as never, elapsed(config));
-    return httpsUrl;
-  } catch (err) {
-    if (isAxiosError(err)) logError(err, elapsed(config));
-    else console.log('[API] ✗ probe error:', err);
-    return `http://${trimmed}`;
-  }
+  // No protocol supplied — assume HTTPS. Don't probe: a probe request can
+  // fail for reasons unrelated to HTTPS support (server rejects HEAD,
+  // network hiccup), and falling back to plain HTTP is a dead end anyway —
+  // Android blocks cleartext traffic by default in compiled builds.
+  return `https://${trimmed}`;
 }
 
 export async function loginRequest(
