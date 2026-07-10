@@ -32,6 +32,53 @@ type Props = {
 const DEBOUNCE_MS = 300;
 const REFOCUS_DELAY_MS = 100;
 
+// Prefixes actually issued by the backend (Bucket QR Code / Bunch QR Code /
+// Coldroom Bucket QR Code all use one of these) — kept in sync with the
+// normalization Server Scripts (get_bucket_details, create_quality_entry)
+// already do server-side.
+const KNOWN_ID_PREFIXES = ['BUCKET', 'BUNCH', 'CBUCKET', 'COLDBUCKET'];
+const PREFIXED_ID_RE = new RegExp(`(?:${KNOWN_ID_PREFIXES.join('|')})[\\s-]*\\d+`, 'i');
+
+/**
+ * A camera decode and a Honeywell-style HID/keyboard-wedge scan both end up
+ * here, but they don't deliver the same thing:
+ *  - Camera decode: the raw QR payload, which is JSON, e.g.
+ *    {"bucket_id":"BUCKET-01234",...} — parse it and pull the id field out.
+ *  - Keyboard-wedge: the scanner "types" the decoded string into whatever
+ *    field has focus. Special characters ({, ", :) are routed through the
+ *    scanner's keyboard-layout emulation and frequently get dropped or
+ *    mistranslated, so the same JSON payload can land as noisy text like
+ *    `bucket_id BUCKET-01234` with no braces/quotes/colons at all — valid
+ *    JSON parsing won't help there, so fall back to pulling a known-prefix
+ *    id pattern out of the noise.
+ * A plain already-clean id (typed manually, or a non-JSON barcode) passes
+ * through both checks untouched.
+ */
+function extractCode(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      const id =
+        parsed.bucket_id ??
+        parsed.bunch_id ??
+        parsed.employee_id ??
+        parsed.emp_id ??
+        parsed.employee_number ??
+        parsed.employee ??
+        parsed.id ??
+        parsed.name;
+      if (id) return String(id).trim().toUpperCase();
+    } catch {
+      // Braces present but not valid JSON — fall through to the
+      // noise-tolerant prefix match below.
+    }
+  }
+  const match = trimmed.match(PREFIXED_ID_RE);
+  if (match) return match[0].replace(/\s+/g, '').toUpperCase();
+  return trimmed;
+}
+
 export const ScanField = forwardRef<ScanFieldHandle, Props>(function ScanField(
   {
     placeholder = 'Scan or type code',
@@ -78,14 +125,14 @@ export const ScanField = forwardRef<ScanFieldHandle, Props>(function ScanField(
   }));
 
   const fire = (code: string) => {
-    const trimmed = code.trim();
-    if (!trimmed) return;
+    const cleaned = extractCode(code);
+    if (!cleaned) return;
     const now = Date.now();
     if (now - lastScanAt.current < DEBOUNCE_MS) return;
     lastScanAt.current = now;
     audio.beep();
     clearProgrammatic();
-    onScan(trimmed);
+    onScan(cleaned);
     inputRef.current?.focus();
   };
 
