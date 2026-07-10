@@ -8,6 +8,8 @@ export type PassOutcome =
 
 export type RejectEntryResult = { reason: string; kind: 'ok' } | { reason: string; kind: 'error'; message: string };
 
+export type VarietiesOutcome = { kind: 'ok'; varieties: Variety[] } | { kind: 'error'; message: string };
+
 function isFailure(res: { error?: string; http_status_code?: number }): boolean {
   return !!res.error || (typeof res.http_status_code === 'number' && res.http_status_code >= 400);
 }
@@ -17,12 +19,14 @@ function errorMessage(res: { error?: string; message?: string }, fallback: strin
 }
 
 export const gradingRepository = {
-  async listVarieties(): Promise<Variety[]> {
+  async listVarieties(): Promise<VarietiesOutcome> {
     try {
       const res = await gradingApi.listVarieties();
-      return (res.message ?? []).map((v) => ({ name: v.name, itemName: v.item_name || v.name }));
-    } catch {
-      return [];
+      if (isFailure(res)) return { kind: 'error', message: res.error || 'Failed to load varieties.' };
+      const varieties = (res.message ?? []).map((v) => ({ name: v.name, itemName: v.item_name || v.name }));
+      return { kind: 'ok', varieties };
+    } catch (err) {
+      return { kind: 'error', message: err instanceof Error ? err.message : 'Failed to load varieties.' };
     }
   },
 

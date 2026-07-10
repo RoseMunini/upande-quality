@@ -58,20 +58,13 @@ export type InspectionPayload = {
 };
 
 export const karenColdroomApi = {
-  /** Cold-store warehouses — filtered by name pattern. */
-  fetchColdStores(farm?: string): Promise<{ message?: RawColdStore[] }> {
-    const filters: unknown[] = [['name', 'like', '%Cold Store%']];
-    if (farm) filters.push(['name', 'like', '%' + farm + '%']);
+  /** Cold-store warehouses. Farm-scoping was dropped — warehouse names use a
+   *  farm abbreviation prefix (e.g. "XFL ..."), not the Farm doctype's name
+   *  ("Xpressions Flora"), so a substring match against farm never matched. */
+  fetchColdStores(): Promise<{ message?: RawColdStore[] }> {
     return api({
-      method: 'GET',
-      url: '/api/method/frappe.client.get_list',
-      params: {
-        doctype: 'Warehouse',
-        filters: JSON.stringify(filters),
-        fields: JSON.stringify(['name']),
-        order_by: 'name asc',
-        limit_page_length: 100,
-      },
+      method: 'POST',
+      url: '/api/method/list_cold_store_warehouses',
       validateStatus: () => true,
     });
   },

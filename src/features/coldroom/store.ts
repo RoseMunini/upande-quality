@@ -74,10 +74,10 @@ export const useKarenColdroomStore = create<State>((set) => ({
     }
   },
 
-  loadColdStores: async (farm) => {
+  loadColdStores: async () => {
     set({ coldStoresLoading: true });
     try {
-      const res = await karenColdroomApi.fetchColdStores(farm);
+      const res = await karenColdroomApi.fetchColdStores();
       set({
         coldStores: (res.message ?? []).map((c) => c.name).filter(Boolean),
         coldStoresLoading: false,

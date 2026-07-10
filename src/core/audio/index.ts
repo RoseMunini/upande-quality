@@ -29,8 +29,17 @@
 //     error: () => play('error'),
 //   };
 
+import { useSettingsStore } from '@/src/core/features/settings/store';
+
+// Guarded on the Settings screen's sound toggle even though playback itself
+// is stubbed out below — so the toggle is already correctly wired the moment
+// real audio is restored, instead of someone having to remember to add this.
+function enabled(): boolean {
+  return useSettingsStore.getState().soundEnabled;
+}
+
 export const audio = {
-  beep: () => {},
-  submit: () => {},
-  error: () => {},
+  beep: () => { if (!enabled()) return; },
+  submit: () => { if (!enabled()) return; },
+  error: () => { if (!enabled()) return; },
 };

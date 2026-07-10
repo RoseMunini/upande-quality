@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Screen } from '@/src/core/ui/Screen';
 import { Card, Alert } from '@/src/core/ui/Card';
@@ -10,9 +10,37 @@ import { DecisionChip } from '@/src/core/ui/DecisionChip';
 import { ScanField, type ScanFieldHandle } from '@/src/core/scanning/ScanField';
 import { focusWhenReady } from '@/src/core/scanning/focus';
 import { useToast } from '@/src/core/ui/Toast';
+import { useAuthStore } from '@/src/core/auth/store';
 import { COLORS, borderRadius, fontFamily, fontSize, spacing } from '@/src/core/theme';
 import { emptyInspectionForm, useIntakeQcInspectionStore, type InspectionForm } from './store';
 import { suggestDecision, type Decision, type Sibling } from './repository';
+
+function CounterField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const count = parseInt(value || '0', 10) || 0;
+  const adjust = (delta: number) => onChange(String(Math.max(0, count + delta)));
+  return (
+    <View style={s.counterRow}>
+      <Text style={s.counterLabel}>{label}</Text>
+      <View style={s.stepper}>
+        <Pressable onPress={() => adjust(-1)} style={s.stepBtn}>
+          <Text style={s.stepBtnText}>−</Text>
+        </Pressable>
+        <Text style={s.stepCount}>{count}</Text>
+        <Pressable onPress={() => adjust(1)} style={s.stepBtn}>
+          <Text style={s.stepBtnText}>+</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
 
 export function IntakeQCInspectionScreen() {
   const scanRef = useRef<ScanFieldHandle>(null);
@@ -28,7 +56,9 @@ export function IntakeQCInspectionScreen() {
   const submitInspection = useIntakeQcInspectionStore((s) => s.submitInspection);
   const requestIsolationCascade = useIntakeQcInspectionStore((s) => s.requestIsolationCascade);
 
-  const [manualInput, setManualInput] = useState('');
+  const fullName = useAuthStore((s) => s.fullName);
+  const email = useAuthStore((s) => s.email);
+
   const [form, setForm] = useState<InspectionForm>(emptyInspectionForm);
   const [decision, setDecision] = useState<Decision | null>(null);
   const [overrideReason, setOverrideReason] = useState('');
@@ -114,6 +144,11 @@ export function IntakeQCInspectionScreen() {
   return (
     <Screen title="Intake QC Inspection" scroll={false}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
+        <Card title="Inspector">
+          <Text style={s.lotLine}>{fullName || email || 'Unknown user'}</Text>
+          <Text style={s.lotSub}>This inspection will be recorded under your account.</Text>
+        </Card>
+
         <Card title="Scan Bucket QR">
           <ScanField
             ref={scanRef}
@@ -122,25 +157,6 @@ export function IntakeQCInspectionScreen() {
             placeholder="Scan or type bucket"
             editable={!lotLoading && !lot}
           />
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: spacing.sm }}>
-            <LabeledInput
-              label=""
-              value={manualInput}
-              onChangeText={setManualInput}
-              placeholder="Or type bucket ID…"
-              autoCapitalize="characters"
-              editable={!lot}
-              style={{ flex: 1 }}
-            />
-            <Button
-              label="Go"
-              disabled={!manualInput.trim() || !!lot}
-              onPress={() => {
-                onScan(manualInput.trim());
-                setManualInput('');
-              }}
-            />
-          </View>
           {lotLoading ? <Text style={s.help}>Loading bucket…</Text> : null}
           {lot ? (
             <View style={s.lotSummary}>
@@ -175,17 +191,17 @@ export function IntakeQCInspectionScreen() {
             </Card>
 
             <Card title="Pest Counts">
-              <LabeledInput label="Duponchela" keyboardType="number-pad" value={form.duponchela} onChangeText={field('duponchela')} />
-              <LabeledInput label="Helicoverpa" keyboardType="number-pad" value={form.helicoverpa} onChangeText={field('helicoverpa')} />
-              <LabeledInput label="Spodoptera" keyboardType="number-pad" value={form.spodoptera} onChangeText={field('spodoptera')} />
-              <LabeledInput label="FCM" keyboardType="number-pad" value={form.fcm} onChangeText={field('fcm')} />
+              <CounterField label="Duponchela" value={form.duponchela} onChange={field('duponchela')} />
+              <CounterField label="Helicoverpa" value={form.helicoverpa} onChange={field('helicoverpa')} />
+              <CounterField label="Spodoptera" value={form.spodoptera} onChange={field('spodoptera')} />
+              <CounterField label="FCM" value={form.fcm} onChange={field('fcm')} />
             </Card>
 
             <Card title="Physical Checks">
-              <LabeledInput label="Blackening" keyboardType="number-pad" value={form.blackening} onChangeText={field('blackening')} />
-              <LabeledInput label="Damages" keyboardType="number-pad" value={form.damages} onChangeText={field('damages')} />
-              <LabeledInput label="Bent Stems" keyboardType="number-pad" value={form.bentStems} onChangeText={field('bentStems')} />
-              <LabeledInput label="Broken Stems" keyboardType="number-pad" value={form.brokenStems} onChangeText={field('brokenStems')} />
+              <CounterField label="Blackening" value={form.blackening} onChange={field('blackening')} />
+              <CounterField label="Damages" value={form.damages} onChange={field('damages')} />
+              <CounterField label="Bent Stems" value={form.bentStems} onChange={field('bentStems')} />
+              <CounterField label="Broken Stems" value={form.brokenStems} onChange={field('brokenStems')} />
             </Card>
 
             <Card title="Residue & Maturity">
@@ -201,7 +217,16 @@ export function IntakeQCInspectionScreen() {
               {form.chemicalResidueStatus === 'Fail' ? (
                 <LabeledInput label="Residue Notes" value={form.chemicalResidueNotes} onChangeText={field('chemicalResidueNotes')} multiline />
               ) : null}
-              <LabeledInput label="Maturity Stage" value={form.maturityStage} onChangeText={field('maturityStage')} />
+              <Text style={s.label}>Maturity Stage</Text>
+              <Segmented
+                value={form.maturityStage || 'Tight Bud'}
+                options={[
+                  { value: 'Tight Bud', label: 'Tight Bud' },
+                  { value: 'Half Open', label: 'Half Open' },
+                  { value: 'Full Open', label: 'Full Open' },
+                ]}
+                onChange={field('maturityStage')}
+              />
             </Card>
 
             <Card title="Other">
@@ -292,6 +317,27 @@ export function IntakeQCInspectionScreen() {
 const s = StyleSheet.create({
   help: { fontSize: 12, color: COLORS.textMuted, marginTop: spacing.xs },
   label: { fontFamily: fontFamily.semiBold, fontSize: fontSize.sm, color: COLORS.text, marginBottom: spacing.xs },
+  counterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.border,
+  },
+  counterLabel: { fontSize: fontSize.sm, color: COLORS.text, flex: 1 },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  stepBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepBtnText: { fontFamily: fontFamily.semiBold, fontSize: fontSize.md, color: COLORS.text },
+  stepCount: { fontFamily: fontFamily.semiBold, fontSize: fontSize.md, color: COLORS.text, minWidth: 24, textAlign: 'center' },
   lotSummary: { marginTop: spacing.md, gap: spacing.xs },
   lotLine: { fontFamily: fontFamily.semiBold, fontSize: fontSize.md, color: COLORS.text },
   lotSub: { fontSize: fontSize.sm, color: COLORS.textMuted, marginBottom: spacing.sm },
