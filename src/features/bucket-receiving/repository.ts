@@ -10,11 +10,6 @@ export type BucketStatus = {
 
 export type SubmitOutcome = { kind: 'ok'; message?: string } | { kind: 'error'; message: string };
 
-/** The qty to hand transfer_bucket — what actually remains after rejects. */
-export function computeRemainingQty(receivedQty: number, rejectQty: number): number {
-  return Math.max(receivedQty - rejectQty, 0);
-}
-
 function isFailure(res: { error?: string; http_status_code?: number }): boolean {
   return !!res.error || (typeof res.http_status_code === 'number' && res.http_status_code >= 400);
 }

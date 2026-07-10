@@ -43,14 +43,15 @@ export const intakeQcInspectionRepository = {
     try {
       const raw = await intakeQcInspectionApi.getBucketDetails(bucketId);
       if (raw.error) return { kind: 'error', message: raw.error };
-      if (raw.found === false) return { kind: 'error', message: 'Bucket not found.' };
+      const details = raw.message;
+      if (!details || details.found === false) return { kind: 'error', message: 'Bucket not found.' };
       return {
         kind: 'ok',
         lot: {
-          bucketId: raw.bucket_id ?? bucketId,
-          variety: raw.variety ?? '',
-          farm: raw.farm ?? '',
-          greenhouse: raw.greenhouse ?? '',
+          bucketId: details.bucket_id ?? bucketId,
+          variety: details.variety ?? '',
+          farm: details.farm ?? '',
+          greenhouse: details.greenhouse ?? '',
         },
       };
     } catch (err) {

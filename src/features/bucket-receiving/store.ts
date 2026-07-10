@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { bucketReceivingRepository, computeRemainingQty, type BucketStatus } from './repository';
+import { bucketReceivingRepository, type BucketStatus } from './repository';
 
 type Outcome = { ok: true } | { ok: false; message: string };
 
@@ -9,11 +9,16 @@ export type QueueItem = {
   greenhouse: string;
   farm: string;
   receivedQty: number;
+  /** Set once transfer runs for this item — what was actually moved. */
+  transferQty: number;
+  /** Derived at transfer time: receivedQty - transferQty. The fixed total
+   *  the reject-reasons step for this item must account for. */
   rejectQty: number;
   transferred: boolean;
+  rejected: boolean;
 };
 
-type Phase = 'receiving' | 'rejecting' | 'transferring' | 'done';
+type Phase = 'receiving' | 'transferring' | 'rejecting' | 'done';
 
 type State = {
   phase: Phase;
@@ -38,15 +43,17 @@ type State = {
   receive: (params: { isBunched: boolean; bunchSize?: number; numberOfBunches?: number }) => Promise<Outcome>;
   enqueueInUse: () => void;
 
-  /** Move from receiving into the reject pass over the whole queue. */
-  startRejecting: () => void;
-  reject: (params: { quantity: number; reason: string; notes?: string }) => Promise<Outcome>;
-  /** Advance past the current item's reject step (whether or not a reject
-   *  was recorded). Rolls the whole queue into the transfer pass once every
-   *  item has had its reject decision made. */
-  advanceReject: () => void;
+  /** Move from receiving into the transfer pass over the whole queue. */
+  startTransferring: () => void;
+  /** transferQty is what's physically moved for the active item — decided
+   *  by the QC, since rejects were already set aside before the move.
+   *  qty === 0 skips the destination scan entirely (whole bucket rejected). */
+  transfer: (transferQty: number, destinationBucketId?: string) => Promise<Outcome>;
 
-  transfer: (destinationBucketId: string) => Promise<Outcome>;
+  /** Submits one reject entry per reason for the active item, then advances.
+   *  Always shown for every item — pass an empty array to move on with
+   *  nothing to report. */
+  submitItemRejects: (entries: { reason: string; quantity: number }[], notes?: string) => Promise<Outcome>;
 
   reset: () => void;
 };
@@ -63,6 +70,13 @@ const initialState = {
   transferring: false,
   usedDestinationBucketIds: [] as string[],
 };
+
+function advanceQueueIndex(activeIndex: number, queueLength: number, currentPhase: Phase): { activeIndex: number; phase: Phase } {
+  const nextIndex = activeIndex + 1;
+  if (nextIndex < queueLength) return { activeIndex: nextIndex, phase: currentPhase };
+  if (currentPhase === 'transferring') return { activeIndex: 0, phase: 'rejecting' };
+  return { activeIndex: 0, phase: 'done' };
+}
 
 export const useBucketReceivingStore = create<State>((set, get) => ({
   ...initialState,
@@ -96,8 +110,10 @@ export const useBucketReceivingStore = create<State>((set, get) => ({
           greenhouse: outcome.greenhouse || scanStatus?.greenhouse || '',
           farm: scanStatus?.farm || '',
           receivedQty: outcome.qty,
+          transferQty: 0,
           rejectQty: 0,
           transferred: false,
+          rejected: false,
         },
       ],
       scanStatus: null,
@@ -118,8 +134,10 @@ export const useBucketReceivingStore = create<State>((set, get) => ({
           greenhouse: scanStatus.greenhouse,
           farm: scanStatus.farm,
           receivedQty: scanStatus.receivedQty,
+          transferQty: 0,
           rejectQty: 0,
           transferred: false,
+          rejected: false,
         },
       ],
       scanStatus: null,
@@ -127,48 +145,26 @@ export const useBucketReceivingStore = create<State>((set, get) => ({
     }));
   },
 
-  startRejecting: () => {
+  startTransferring: () => {
     if (get().queue.length === 0) return;
-    set({ phase: 'rejecting', activeIndex: 0 });
+    set({ phase: 'transferring', activeIndex: 0 });
   },
 
-  reject: async (params) => {
-    const { queue, activeIndex } = get();
-    const item = queue[activeIndex];
-    if (!item) return { ok: false, message: 'No active bucket.' };
-    set({ rejecting: true });
-    const outcome = await bucketReceivingRepository.submitReject({
-      bucketId: item.bucketId,
-      farm: item.farm,
-      greenhouse: item.greenhouse,
-      variety: item.itemCode,
-      quantity: params.quantity,
-      reason: params.reason,
-      notes: params.notes,
-    });
-    set({ rejecting: false });
-    if (outcome.kind === 'error') return { ok: false, message: outcome.message };
-    set((s) => ({
-      queue: s.queue.map((q, i) => (i === activeIndex ? { ...q, rejectQty: q.rejectQty + params.quantity } : q)),
-    }));
-    return { ok: true };
-  },
-
-  advanceReject: () => {
-    set((s) => {
-      const nextIndex = s.activeIndex + 1;
-      const done = nextIndex >= s.queue.length;
-      return {
-        activeIndex: done ? 0 : nextIndex,
-        phase: done ? 'transferring' : 'rejecting',
-      };
-    });
-  },
-
-  transfer: async (destinationBucketId) => {
+  transfer: async (transferQty, destinationBucketId) => {
     const { queue, activeIndex, usedDestinationBucketIds } = get();
     const item = queue[activeIndex];
     if (!item) return { ok: false, message: 'No active bucket.' };
+    const rejectQty = Math.max(item.receivedQty - transferQty, 0);
+
+    if (transferQty <= 0) {
+      set((s) => ({
+        queue: s.queue.map((q, i) => (i === activeIndex ? { ...q, transferQty: 0, rejectQty: item.receivedQty, transferred: true } : q)),
+        ...advanceQueueIndex(activeIndex, s.queue.length, 'transferring'),
+      }));
+      return { ok: true };
+    }
+
+    if (!destinationBucketId) return { ok: false, message: 'Scan a destination bucket.' };
     if (usedDestinationBucketIds.includes(destinationBucketId)) {
       return {
         ok: false,
@@ -179,19 +175,43 @@ export const useBucketReceivingStore = create<State>((set, get) => ({
     const outcome = await bucketReceivingRepository.transferBucket({
       sourceBucketId: item.bucketId,
       destinationBucketId,
-      qty: computeRemainingQty(item.receivedQty, item.rejectQty),
+      qty: transferQty,
     });
     set({ transferring: false });
     if (outcome.kind === 'error') return { ok: false, message: outcome.message };
-    set((s) => {
-      const nextIndex = s.activeIndex + 1;
-      return {
-        queue: s.queue.map((q, i) => (i === s.activeIndex ? { ...q, transferred: true } : q)),
-        activeIndex: nextIndex,
-        phase: nextIndex >= s.queue.length ? 'done' : 'transferring',
-        usedDestinationBucketIds: [...s.usedDestinationBucketIds, destinationBucketId],
-      };
-    });
+    set((s) => ({
+      queue: s.queue.map((q, i) => (i === activeIndex ? { ...q, transferQty, rejectQty, transferred: true } : q)),
+      usedDestinationBucketIds: [...s.usedDestinationBucketIds, destinationBucketId],
+      ...advanceQueueIndex(activeIndex, s.queue.length, 'transferring'),
+    }));
+    return { ok: true };
+  },
+
+  submitItemRejects: async (entries, notes) => {
+    const { queue, activeIndex } = get();
+    const item = queue[activeIndex];
+    if (!item) return { ok: false, message: 'No active bucket.' };
+    set({ rejecting: true });
+    for (const entry of entries) {
+      const outcome = await bucketReceivingRepository.submitReject({
+        bucketId: item.bucketId,
+        farm: item.farm,
+        greenhouse: item.greenhouse,
+        variety: item.itemCode,
+        quantity: entry.quantity,
+        reason: entry.reason,
+        notes,
+      });
+      if (outcome.kind === 'error') {
+        set({ rejecting: false });
+        return { ok: false, message: outcome.message };
+      }
+    }
+    set((s) => ({
+      rejecting: false,
+      queue: s.queue.map((q, i) => (i === activeIndex ? { ...q, rejected: true } : q)),
+      ...advanceQueueIndex(activeIndex, s.queue.length, 'rejecting'),
+    }));
     return { ok: true };
   },
 

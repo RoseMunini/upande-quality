@@ -37,6 +37,7 @@ export function GradingScreen() {
   const rejecting = useGradingStore((s) => s.rejecting);
   const varieties = useGradingStore((s) => s.varieties);
   const varietiesLoading = useGradingStore((s) => s.varietiesLoading);
+  const varietiesError = useGradingStore((s) => s.varietiesError);
   const loadVarieties = useGradingStore((s) => s.loadVarieties);
   const passGrading = useGradingStore((s) => s.passGrading);
   const submitRejects = useGradingStore((s) => s.submitRejects);
@@ -172,6 +173,12 @@ export function GradingScreen() {
                 onChange={setVariety}
                 disabled={varietiesLoading}
               />
+              {varietiesError ? (
+                <>
+                  <Alert tone="danger">{varietiesError}</Alert>
+                  <Button label="Retry" variant="outline" onPress={loadVarieties} />
+                </>
+              ) : null}
             </Card>
 
             <Card title="Reason(s) & Quantities">

@@ -9,6 +9,7 @@ type State = {
 
   varieties: Variety[];
   varietiesLoading: boolean;
+  varietiesError: string | null;
   loadVarieties: () => Promise<void>;
 
   passGrading: (bunchId: string, gradedBy: string) => Promise<PassResult>;
@@ -25,12 +26,17 @@ export const useGradingStore = create<State>((set, get) => ({
 
   varieties: [],
   varietiesLoading: false,
+  varietiesError: null,
 
   loadVarieties: async () => {
     if (get().varieties.length > 0 || get().varietiesLoading) return;
-    set({ varietiesLoading: true });
-    const varieties = await gradingRepository.listVarieties();
-    set({ varieties, varietiesLoading: false });
+    set({ varietiesLoading: true, varietiesError: null });
+    const outcome = await gradingRepository.listVarieties();
+    if (outcome.kind === 'error') {
+      set({ varietiesLoading: false, varietiesError: outcome.message });
+      return;
+    }
+    set({ varieties: outcome.varieties, varietiesLoading: false, varietiesError: null });
   },
 
   passGrading: async (bunchId, gradedBy) => {

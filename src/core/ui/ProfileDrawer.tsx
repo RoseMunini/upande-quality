@@ -71,8 +71,14 @@ export function ProfileDrawer() {
     router.push('/pending-isolations');
   };
 
+  const goToTraceability = () => {
+    close();
+    router.push('/traceability');
+  };
+
   const onSettings = () => {
-    Alert.alert('Settings', 'Nothing here yet — coming soon.');
+    close();
+    router.push('/settings');
   };
 
   const onSignOut = () => {
@@ -102,8 +108,6 @@ export function ProfileDrawer() {
         <Animated.View
           style={[s.panel, { width: DRAWER_WIDTH, paddingTop: insets.top + spacing.lg, transform: [{ translateX }] }]}
         >
-          <Text style={s.drawerTitle}>Upande Quality</Text>
-
           <View style={s.profile}>
             <View style={s.avatar}>
               <Text style={s.avatarText}>{initial}</Text>
@@ -118,6 +122,7 @@ export function ProfileDrawer() {
           <MenuRow icon="checkmark-done-outline" label="Intake QC" onPress={goToIntakeQc} />
           <MenuRow icon="ribbon-outline" label="Grading" onPress={goToGradingQc} />
           <MenuRow icon="checkbox-outline" label="Inspection Log" onPress={goToInspectionLog} />
+          <MenuRow icon="search-outline" label="Traceability" onPress={goToTraceability} />
           {isQcSupervisor ? (
             <MenuRow icon="alert-circle-outline" label="Pending Isolations" onPress={goToPendingIsolations} />
           ) : null}
@@ -166,7 +171,6 @@ const s = StyleSheet.create({
     backgroundColor: COLORS.surface,
     paddingHorizontal: spacing.lg,
   },
-  drawerTitle: { fontFamily: fontFamily.bold, fontSize: fontSize.xl, color: COLORS.text, marginBottom: spacing.lg },
   profile: { alignItems: 'center', paddingBottom: spacing.lg },
   avatar: {
     width: 64,

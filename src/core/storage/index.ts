@@ -10,6 +10,7 @@ export const StorageKeys = {
   versionLastReportedOn: 'versionLastReportedOn',
   userRoles: 'userRoles',
   biometricEnabled: 'biometric_enabled',
+  soundEnabled: 'sound_enabled',
   // Password is saved on every successful password login so the biometric
   // flow can re-authenticate by feeding it back to the same login endpoint.
   // Stored in AsyncStorage (not encrypted); access is gated by the OS

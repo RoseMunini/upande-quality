@@ -17,6 +17,9 @@ interface NetworkState {
   checking: boolean;
   consecutiveFailures: number;
   ready: boolean;
+  /** Timestamp (ms) of the last successful API response, for a Settings-screen
+   *  "last synced" readout. Null until the first successful call this session. */
+  lastSuccessAt: number | null;
 
   init: () => void;
   forceCheck: () => Promise<void>;
@@ -42,6 +45,7 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
   checking: false,
   consecutiveFailures: 0,
   ready: false,
+  lastSuccessAt: null,
 
   init: () => {
     if (get().ready) return;
@@ -77,6 +81,7 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
   notifyApiSuccess: () => {
     if (get().consecutiveFailures > 0) set({ consecutiveFailures: 0 });
     if (!get().online) set({ online: true });
+    set({ lastSuccessAt: Date.now() });
   },
 
   notifyApiFailure: () => {

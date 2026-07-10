@@ -5,6 +5,7 @@ import { Card } from '@/src/core/ui/Card';
 import { Button } from '@/src/core/ui/Button';
 import { Dropdown } from '@/src/core/ui/Dropdown';
 import { LabeledInput } from '@/src/core/ui/LabeledInput';
+import { CalendarPicker } from '@/src/core/ui/CalendarPicker';
 import { useToast } from '@/src/core/ui/Toast';
 import { COLORS, fontFamily, fontSize, spacing } from '@/src/core/theme';
 import { useKarenColdroomStore } from '@/src/features/coldroom/store';
@@ -93,9 +94,7 @@ export function KarenInspectionLogScreen({ userFarm }: { userFarm: string }) {
             disabled={coldStoresLoading}
             onChange={(v) => setColdstore(v)} />
           <View style={{ height: 12 }} />
-          <LabeledInput
-            label="Date" iconName="calendar-outline" value={date}
-            onChangeText={setDate} placeholder="YYYY-MM-DD" autoCapitalize="none" />
+          <CalendarPicker label="Date" value={date} onChange={setDate} />
         </Card>
 
         <Card>

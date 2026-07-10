@@ -58,7 +58,7 @@ export type InspectionSubmitPayload = {
 type MethodResponse<T extends object> = T & { error?: string; http_status_code?: number };
 
 export const intakeQcInspectionApi = {
-  getBucketDetails(bucketId: string): Promise<MethodResponse<RawBucketDetails>> {
+  getBucketDetails(bucketId: string): Promise<MethodResponse<{ message?: RawBucketDetails }>> {
     return api({
       method: 'POST',
       url: '/api/method/get_bucket_details',

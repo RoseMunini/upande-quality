@@ -15,7 +15,7 @@ const ICONS: Record<string, TabIconPair> = {
   'intake-qc-inspection': { outline: 'clipboard-outline', filled: 'clipboard' },
   'grading-qc': { outline: 'ribbon-outline', filled: 'ribbon' },
   'inspection-log': { outline: 'checkbox-outline', filled: 'checkbox' },
-  'configure-station': { outline: 'settings-outline', filled: 'settings' },
+  'configure-station': { outline: 'hardware-chip-outline', filled: 'hardware-chip' },
 };
 
 export default function TabLayout() {
