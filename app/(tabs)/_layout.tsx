@@ -12,8 +12,10 @@ type TabIconPair = {
 
 const ICONS: Record<string, TabIconPair> = {
   'intake-qc': { outline: 'checkmark-done-outline', filled: 'checkmark-done' },
+  'intake-qc-inspection': { outline: 'clipboard-outline', filled: 'clipboard' },
   'grading-qc': { outline: 'ribbon-outline', filled: 'ribbon' },
   'inspection-log': { outline: 'checkbox-outline', filled: 'checkbox' },
+  'stock-check': { outline: 'swap-horizontal-outline', filled: 'swap-horizontal' },
   'configure-station': { outline: 'settings-outline', filled: 'settings' },
 };
 
@@ -46,8 +48,10 @@ export default function TabLayout() {
       })}
     >
       <Tabs.Screen name="intake-qc" options={{ title: 'Intake QC' }} />
+      <Tabs.Screen name="intake-qc-inspection" options={{ title: 'Inspection' }} />
       <Tabs.Screen name="grading-qc" options={{ title: 'Grading' }} />
       <Tabs.Screen name="inspection-log" options={{ title: 'Inspection Log' }} />
+      <Tabs.Screen name="stock-check" options={{ title: 'Stock Check' }} />
       <Tabs.Screen name="configure-station" options={{ title: 'Station' }} />
     </Tabs>
   );
