@@ -50,7 +50,8 @@
         {
           "android": {
             "enableProguardInReleaseBuilds": false,
-            "enableShrinkResourcesInReleaseBuilds": false
+            "enableShrinkResourcesInReleaseBuilds": false,
+            "enableMinifyInReleaseBuilds": false
           }
         }
       ],
@@ -66,6 +67,15 @@
         "projectId": "ac505cda-0895-4e3e-a777-c8b468e793fb"
       }
     },
-    "owner": "rmunini"
+    "owner": "rmunini",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ac505cda-0895-4e3e-a777-c8b468e793fb",
+      "requestHeaders": {
+        "expo-channel-name": "production"
+      }
+    }
   }
 }
