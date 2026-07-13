@@ -237,6 +237,11 @@ export function BucketReceivingScreen() {
     setReviewRejectCounts((c) => ({ ...c, [reason]: Math.max(0, (c[reason] ?? 0) + delta) }));
   };
 
+  const onTypeReviewCount = (reason: string, text: string) => {
+    const digits = text.replace(/[^0-9]/g, '');
+    setReviewRejectCounts((c) => ({ ...c, [reason]: digits === '' ? 0 : parseInt(digits, 10) }));
+  };
+
   const reviewAssignedTotal = Object.values(reviewRejectCounts).reduce((a, b) => a + b, 0);
   const reviewingItem = quarantineList.find((q) => q.bucketId === reviewingBucketId);
 
@@ -543,7 +548,12 @@ export function BucketReceivingScreen() {
                           <Pressable onPress={() => adjustReviewCount(r, -1)} style={s.stepBtn}>
                             <Text style={s.stepBtnText}>−</Text>
                           </Pressable>
-                          <Text style={s.stepCount}>{reviewRejectCounts[r] ?? 0}</Text>
+                          <TextInput
+                            value={String(reviewRejectCounts[r] ?? 0)}
+                            onChangeText={(t) => onTypeReviewCount(r, t)}
+                            keyboardType="number-pad"
+                            style={s.stepInput}
+                          />
                           <Pressable onPress={() => adjustReviewCount(r, 1)} style={s.stepBtn}>
                             <Text style={s.stepBtnText}>+</Text>
                           </Pressable>
