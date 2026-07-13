@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { bucketReceivingRepository, type BucketStatus } from './repository';
+import { bucketReceivingRepository, type BucketStatus, type QuarantinedBucket } from './repository';
 
 type Outcome = { ok: true } | { ok: false; message: string };
 
@@ -16,6 +16,9 @@ export type QueueItem = {
   rejectQty: number;
   transferred: boolean;
   rejected: boolean;
+  /** Sent to quarantine instead of transferred/rejected — its fate is
+   *  decided later in Quarantine Review, so it skips the reject step here. */
+  quarantined: boolean;
 };
 
 type Phase = 'receiving' | 'transferring' | 'rejecting' | 'done';
@@ -32,6 +35,7 @@ type State = {
   receiving: boolean;
   rejecting: boolean;
   transferring: boolean;
+  quarantining: boolean;
 
   /** Destination buckets already transferred into this batch. Cleared on
    *  reset() — this only stops reusing one twice within the same batch,
@@ -49,11 +53,26 @@ type State = {
    *  by the QC, since rejects were already set aside before the move.
    *  qty === 0 skips the destination scan entirely (whole bucket rejected). */
   transfer: (transferQty: number, destinationBucketId?: string) => Promise<Outcome>;
+  /** Sends the whole active item to quarantine instead of transferring or
+   *  rejecting it now — its accept/reject fate is decided later. */
+  quarantineActiveItem: () => Promise<Outcome>;
 
   /** Submits one reject entry per reason for the active item, then advances.
    *  Always shown for every item — pass an empty array to move on with
    *  nothing to report. */
   submitItemRejects: (entries: { reason: string; quantity: number }[], notes?: string) => Promise<Outcome>;
+
+  // Quarantine Review — independent of the batch queue above; can review
+  // buckets quarantined in a previous session too.
+  quarantineList: QuarantinedBucket[];
+  quarantineListLoading: boolean;
+  loadQuarantineList: () => Promise<void>;
+  releaseAsTransfer: (bucketId: string, qty: number, destinationBucketId: string) => Promise<Outcome>;
+  releaseAsReject: (
+    bucketId: string,
+    entries: { reason: string; quantity: number }[],
+    notes?: string,
+  ) => Promise<Outcome>;
 
   reset: () => void;
 };
@@ -68,7 +87,10 @@ const initialState = {
   receiving: false,
   rejecting: false,
   transferring: false,
+  quarantining: false,
   usedDestinationBucketIds: [] as string[],
+  quarantineList: [] as QuarantinedBucket[],
+  quarantineListLoading: false,
 };
 
 function advanceQueueIndex(activeIndex: number, queueLength: number, currentPhase: Phase): { activeIndex: number; phase: Phase } {
@@ -114,6 +136,7 @@ export const useBucketReceivingStore = create<State>((set, get) => ({
           rejectQty: 0,
           transferred: false,
           rejected: false,
+          quarantined: false,
         },
       ],
       scanStatus: null,
@@ -138,6 +161,7 @@ export const useBucketReceivingStore = create<State>((set, get) => ({
           rejectQty: 0,
           transferred: false,
           rejected: false,
+          quarantined: false,
         },
       ],
       scanStatus: null,
@@ -187,6 +211,23 @@ export const useBucketReceivingStore = create<State>((set, get) => ({
     return { ok: true };
   },
 
+  quarantineActiveItem: async () => {
+    const { queue, activeIndex } = get();
+    const item = queue[activeIndex];
+    if (!item) return { ok: false, message: 'No active bucket.' };
+    set({ quarantining: true });
+    const outcome = await bucketReceivingRepository.quarantineBucket(item.bucketId);
+    set({ quarantining: false });
+    if (outcome.kind === 'error') return { ok: false, message: outcome.message };
+    set((s) => ({
+      queue: s.queue.map((q, i) =>
+        i === activeIndex ? { ...q, quarantined: true, transferred: true, rejected: true, rejectQty: 0 } : q,
+      ),
+      ...advanceQueueIndex(activeIndex, s.queue.length, 'transferring'),
+    }));
+    return { ok: true };
+  },
+
   submitItemRejects: async (entries, notes) => {
     const { queue, activeIndex } = get();
     const item = queue[activeIndex];
@@ -211,6 +252,53 @@ export const useBucketReceivingStore = create<State>((set, get) => ({
       rejecting: false,
       queue: s.queue.map((q, i) => (i === activeIndex ? { ...q, rejected: true } : q)),
       ...advanceQueueIndex(activeIndex, s.queue.length, 'rejecting'),
+    }));
+    return { ok: true };
+  },
+
+  loadQuarantineList: async () => {
+    set({ quarantineListLoading: true });
+    const quarantineList = await bucketReceivingRepository.listQuarantinedBuckets();
+    set({ quarantineList, quarantineListLoading: false });
+  },
+
+  releaseAsTransfer: async (bucketId, qty, destinationBucketId) => {
+    if (get().usedDestinationBucketIds.includes(destinationBucketId)) {
+      return { ok: false, message: `${destinationBucketId} was already used as a destination — scan a different one.` };
+    }
+    set({ transferring: true });
+    const outcome = await bucketReceivingRepository.transferBucket({ sourceBucketId: bucketId, destinationBucketId, qty });
+    set({ transferring: false });
+    if (outcome.kind === 'error') return { ok: false, message: outcome.message };
+    set((s) => ({
+      quarantineList: s.quarantineList.filter((q) => q.bucketId !== bucketId),
+      usedDestinationBucketIds: [...s.usedDestinationBucketIds, destinationBucketId],
+    }));
+    return { ok: true };
+  },
+
+  releaseAsReject: async (bucketId, entries, notes) => {
+    const item = get().quarantineList.find((q) => q.bucketId === bucketId);
+    if (!item) return { ok: false, message: 'Bucket not found in quarantine list.' };
+    set({ rejecting: true });
+    for (const entry of entries) {
+      const outcome = await bucketReceivingRepository.submitReject({
+        bucketId,
+        greenhouse: item.greenhouse,
+        variety: item.itemCode,
+        quantity: entry.quantity,
+        reason: entry.reason,
+        notes,
+        section: 'quarantine_reject',
+      });
+      if (outcome.kind === 'error') {
+        set({ rejecting: false });
+        return { ok: false, message: outcome.message };
+      }
+    }
+    set((s) => ({
+      rejecting: false,
+      quarantineList: s.quarantineList.filter((q) => q.bucketId !== bucketId),
     }));
     return { ok: true };
   },
