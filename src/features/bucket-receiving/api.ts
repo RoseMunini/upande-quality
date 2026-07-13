@@ -35,6 +35,26 @@ export type RawTransferResult = {
   message?: string;
 };
 
+export type RawQuarantineResult = {
+  stock_entry_name?: string;
+  bucket_id?: string;
+  variety?: string;
+  greenhouse?: string;
+  item_code?: string;
+  qty?: number;
+  message?: string;
+};
+
+export type RawQuarantinedBucket = {
+  bucket_id: string;
+  stock_entry: string;
+  quarantined_at: string;
+  item_code: string;
+  qty: number;
+  greenhouse: string | null;
+  variety: string | null;
+};
+
 export type MethodResponse<T extends object> = T & { error?: string; http_status_code?: number };
 
 export const bucketReceivingApi = {
@@ -74,12 +94,15 @@ export const bucketReceivingApi = {
     quantity: number;
     reason: string;
     notes?: string;
+    /** 'receiving_reject' (default) for the normal flow, 'quarantine_reject'
+     *  when releasing a quarantined bucket as a reject. */
+    section?: 'receiving_reject' | 'quarantine_reject';
   }): Promise<MethodResponse<RawRejectResult>> {
     return api({
       method: 'POST',
       url: '/api/method/create_quality_entry',
       data: {
-        section: 'receiving_reject',
+        section: params.section ?? 'receiving_reject',
         quantity: params.quantity,
         reason: params.reason,
         notes: params.notes,
@@ -105,6 +128,23 @@ export const bucketReceivingApi = {
         destination_bucket_id: params.destinationBucketId,
         qty: params.qty,
       },
+      validateStatus: () => true,
+    });
+  },
+
+  quarantineBucket(sourceBucketId: string): Promise<MethodResponse<RawQuarantineResult>> {
+    return api({
+      method: 'POST',
+      url: '/api/method/quarantine_bucket',
+      data: { source_bucket_id: sourceBucketId },
+      validateStatus: () => true,
+    });
+  },
+
+  listQuarantinedBuckets(): Promise<MethodResponse<{ message?: RawQuarantinedBucket[] }>> {
+    return api({
+      method: 'POST',
+      url: '/api/method/list_quarantined_buckets',
       validateStatus: () => true,
     });
   },

@@ -10,6 +10,14 @@ export type BucketStatus = {
 
 export type SubmitOutcome = { kind: 'ok'; message?: string } | { kind: 'error'; message: string };
 
+export type QuarantinedBucket = {
+  bucketId: string;
+  itemCode: string;
+  greenhouse: string;
+  qty: number;
+  quarantinedAt: string;
+};
+
 function isFailure(res: { error?: string; http_status_code?: number }): boolean {
   return !!res.error || (typeof res.http_status_code === 'number' && res.http_status_code >= 400);
 }
@@ -64,6 +72,7 @@ export const bucketReceivingRepository = {
     quantity: number;
     reason: string;
     notes?: string;
+    section?: 'receiving_reject' | 'quarantine_reject';
   }): Promise<SubmitOutcome> {
     try {
       const res = await bucketReceivingApi.submitReject(params);
@@ -85,6 +94,31 @@ export const bucketReceivingRepository = {
       return { kind: 'ok', message: res.message };
     } catch (err) {
       return { kind: 'error', message: err instanceof Error ? err.message : 'Failed to transfer bucket.' };
+    }
+  },
+
+  async quarantineBucket(sourceBucketId: string): Promise<SubmitOutcome> {
+    try {
+      const res = await bucketReceivingApi.quarantineBucket(sourceBucketId);
+      if (isFailure(res)) return { kind: 'error', message: errorMessage(res, 'Failed to quarantine bucket.') };
+      return { kind: 'ok', message: res.message };
+    } catch (err) {
+      return { kind: 'error', message: err instanceof Error ? err.message : 'Failed to quarantine bucket.' };
+    }
+  },
+
+  async listQuarantinedBuckets(): Promise<QuarantinedBucket[]> {
+    try {
+      const res = await bucketReceivingApi.listQuarantinedBuckets();
+      return (res.message ?? []).map((q) => ({
+        bucketId: q.bucket_id,
+        itemCode: q.item_code ?? '',
+        greenhouse: q.greenhouse ?? '',
+        qty: q.qty ?? 0,
+        quarantinedAt: q.quarantined_at,
+      }));
+    } catch {
+      return [];
     }
   },
 };
