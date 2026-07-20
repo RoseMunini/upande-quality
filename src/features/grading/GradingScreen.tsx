@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Screen } from '@/src/core/ui/Screen';
 import { Card, Alert } from '@/src/core/ui/Card';
@@ -86,6 +86,11 @@ export function GradingScreen() {
 
   const adjustCount = (reason: string, delta: number) => {
     setCounts((c) => ({ ...c, [reason]: Math.max(0, (c[reason] ?? 0) + delta) }));
+  };
+
+  const onTypeCount = (reason: string, text: string) => {
+    const digits = text.replace(/[^0-9]/g, '');
+    setCounts((c) => ({ ...c, [reason]: digits === '' ? 0 : parseInt(digits, 10) }));
   };
 
   const totalRejectQty = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -189,7 +194,12 @@ export function GradingScreen() {
                     <Pressable onPress={() => adjustCount(r, -1)} style={s.stepBtn}>
                       <Text style={s.stepBtnText}>−</Text>
                     </Pressable>
-                    <Text style={s.stepCount}>{counts[r] ?? 0}</Text>
+                    <TextInput
+                      value={String(counts[r] ?? 0)}
+                      onChangeText={(t) => onTypeCount(r, t)}
+                      keyboardType="number-pad"
+                      style={s.stepInput}
+                    />
                     <Pressable onPress={() => adjustCount(r, 1)} style={s.stepBtn}>
                       <Text style={s.stepBtnText}>+</Text>
                     </Pressable>
@@ -239,4 +249,15 @@ const s = StyleSheet.create({
   },
   stepBtnText: { fontFamily: fontFamily.semiBold, fontSize: fontSize.md, color: COLORS.text },
   stepCount: { fontFamily: fontFamily.semiBold, fontSize: fontSize.md, color: COLORS.text, minWidth: 24, textAlign: 'center' },
+  stepInput: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: fontSize.md,
+    color: COLORS.text,
+    minWidth: 40,
+    textAlign: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingVertical: 4,
+  },
 });
