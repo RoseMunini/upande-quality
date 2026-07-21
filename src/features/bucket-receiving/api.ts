@@ -1,22 +1,15 @@
 import { api } from '@/src/core/api/client';
 
-export type RawBucketReceivingStatus = {
+export type RawSearchResult = {
   exists?: boolean;
-  status?: string;
+  message?: string;
+  bucket_id?: string;
   item_code?: string | null;
-  greenhouse?: string | null;
   farm?: string | null;
-  received_qty?: number;
-  message?: string;
-};
-
-export type RawReceiveResult = {
-  stock_entry_name?: string;
-  variety?: string;
-  greenhouse?: string;
+  greenhouse?: string | null;
   qty?: number;
-  is_bunched?: boolean;
-  message?: string;
+  stock_entry_type?: string;
+  current_warehouse?: string;
 };
 
 export type RawRejectResult = {
@@ -58,55 +51,52 @@ export type RawQuarantinedBucket = {
 export type MethodResponse<T extends object> = T & { error?: string; http_status_code?: number };
 
 export const bucketReceivingApi = {
-  getBucketReceivingStatus(bucketId: string): Promise<MethodResponse<RawBucketReceivingStatus>> {
+  searchRecentBucket(bucketId: string): Promise<MethodResponse<RawSearchResult>> {
     return api({
       method: 'POST',
-      url: '/api/method/get_bucket_receiving_status',
+      url: '/api/method/search_recent_bucket',
       data: { bucket_id: bucketId },
       validateStatus: () => true,
     });
   },
 
-  receiveBucket(params: {
+  rejectBucket(params: {
     bucketId: string;
-    isBunched: boolean;
-    bunchSize?: number;
-    numberOfBunches?: number;
-  }): Promise<MethodResponse<RawReceiveResult>> {
+    quantity: number;
+    reason: string;
+    notes?: string;
+  }): Promise<MethodResponse<RawRejectResult>> {
     return api({
       method: 'POST',
-      url: '/api/method/receiving_entry',
+      url: '/api/method/reject_bucket_qc',
       data: {
         bucket_id: params.bucketId,
-        is_bunched: params.isBunched,
-        bunch_size: params.bunchSize,
-        number_of_bunches: params.numberOfBunches,
+        quantity: params.quantity,
+        reason: params.reason,
+        notes: params.notes,
       },
       validateStatus: () => true,
     });
   },
 
-  submitReject(params: {
+  /** Used only by Quarantine Review's reject-release — the bucket is known
+   *  to be sitting in the quarantine warehouse at that point. */
+  submitQuarantineReject(params: {
     bucketId: string;
-    farm?: string;
     greenhouse?: string;
     variety?: string;
     quantity: number;
     reason: string;
     notes?: string;
-    /** 'receiving_reject' (default) for the normal flow, 'quarantine_reject'
-     *  when releasing a quarantined bucket as a reject. */
-    section?: 'receiving_reject' | 'quarantine_reject';
   }): Promise<MethodResponse<RawRejectResult>> {
     return api({
       method: 'POST',
       url: '/api/method/create_quality_entry',
       data: {
-        section: params.section ?? 'receiving_reject',
+        section: 'quarantine_reject',
         quantity: params.quantity,
         reason: params.reason,
         notes: params.notes,
-        farm: params.farm,
         greenhouse: params.greenhouse,
         variety: params.variety,
         ref_id: params.bucketId,
