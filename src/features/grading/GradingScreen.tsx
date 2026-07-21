@@ -41,6 +41,10 @@ export function GradingScreen() {
   const loadVarieties = useGradingStore((s) => s.loadVarieties);
   const passGrading = useGradingStore((s) => s.passGrading);
   const submitRejects = useGradingStore((s) => s.submitRejects);
+  const graderName = useGradingStore((s) => s.graderName);
+  const graderLookupLoading = useGradingStore((s) => s.graderLookupLoading);
+  const lookupGrader = useGradingStore((s) => s.lookupGrader);
+  const clearGrader = useGradingStore((s) => s.clearGrader);
 
   const [mode, setMode] = useState<Mode>('pass');
 
@@ -63,6 +67,12 @@ export function GradingScreen() {
   const onScanGrader = async (raw: string) => {
     const id = raw.trim();
     if (!id) return;
+    const outcome = await lookupGrader(id);
+    if (!outcome.ok) {
+      showError(outcome.message);
+      focusWhenReady(graderRef);
+      return;
+    }
     setGraderId(id);
     focusWhenReady(bunchRef);
   };
@@ -81,6 +91,7 @@ export function GradingScreen() {
 
   const changeGrader = () => {
     setGraderId('');
+    clearGrader();
     focusWhenReady(graderRef);
   };
 
@@ -136,17 +147,22 @@ export function GradingScreen() {
             <Card title="Grader">
               {graderId ? (
                 <View style={s.summary}>
-                  <Text style={s.summaryLine}>Employee {graderId}</Text>
+                  <Text style={s.summaryLine}>{graderName || `Employee ${graderId}`}</Text>
+                  {graderName ? <Text style={s.help}>Employee {graderId}</Text> : null}
                   <Button label="Change grader" variant="outline" onPress={changeGrader} />
                 </View>
               ) : (
-                <ScanField
-                  ref={graderRef}
-                  onScan={onScanGrader}
-                  autoFocus
-                  placeholder="Scan or type employee ID"
-                  editable
-                />
+                <>
+                  <ScanField
+                    ref={graderRef}
+                    onScan={onScanGrader}
+                    autoFocus
+                    placeholder="Scan or type employee ID"
+                    editable={!graderLookupLoading}
+                    showSoftKeyboard
+                  />
+                  {graderLookupLoading ? <Text style={s.help}>Looking up employee…</Text> : null}
+                </>
               )}
             </Card>
 
@@ -161,6 +177,7 @@ export function GradingScreen() {
                     autoFocus
                     placeholder="Scan or type bunch"
                     editable={!passing}
+                    showSoftKeyboard
                   />
                   {passing ? <Text style={s.help}>Passing…</Text> : null}
                 </>

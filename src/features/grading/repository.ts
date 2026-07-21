@@ -10,6 +10,10 @@ export type RejectEntryResult = { reason: string; kind: 'ok' } | { reason: strin
 
 export type VarietiesOutcome = { kind: 'ok'; varieties: Variety[] } | { kind: 'error'; message: string };
 
+export type EmployeeLookupOutcome =
+  | { kind: 'ok'; employeeId: string; employeeName: string }
+  | { kind: 'error'; message: string };
+
 function isFailure(res: { error?: string; http_status_code?: number }): boolean {
   return !!res.error || (typeof res.http_status_code === 'number' && res.http_status_code >= 400);
 }
@@ -27,6 +31,17 @@ export const gradingRepository = {
       return { kind: 'ok', varieties };
     } catch (err) {
       return { kind: 'error', message: err instanceof Error ? err.message : 'Failed to load varieties.' };
+    }
+  },
+
+  async lookupEmployee(employeeId: string): Promise<EmployeeLookupOutcome> {
+    try {
+      const res = await gradingApi.lookupEmployee(employeeId);
+      if (isFailure(res)) return { kind: 'error', message: errorMessage(res, 'Failed to look up employee.') };
+      if (res.exists === false) return { kind: 'error', message: res.message ?? 'Employee not found.' };
+      return { kind: 'ok', employeeId: res.employee_id ?? employeeId, employeeName: res.employee_name ?? '' };
+    } catch (err) {
+      return { kind: 'error', message: err instanceof Error ? err.message : 'Failed to look up employee.' };
     }
   },
 
