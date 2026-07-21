@@ -32,12 +32,16 @@ type Props = {
 const DEBOUNCE_MS = 300;
 const REFOCUS_DELAY_MS = 100;
 
-// Prefixes actually issued by the backend (Bucket QR Code / Bunch QR Code /
-// Coldroom Bucket QR Code all use one of these) — kept in sync with the
-// normalization Server Scripts (get_bucket_details, create_quality_entry)
-// already do server-side.
+// Prefixes actually issued by the backend (Bucket QR Code / Bunch QR Code all
+// use one of these) — kept in sync with the normalization Server Scripts
+// (get_bucket_details, create_quality_entry) already do server-side.
 const KNOWN_ID_PREFIXES = ['BUCKET', 'BUNCH', 'CBUCKET', 'COLDBUCKET'];
 const PREFIXED_ID_RE = new RegExp(`(?:${KNOWN_ID_PREFIXES.join('|')})[\\s-]*\\d+`, 'i');
+// Coldroom (destination) buckets use a distinct, space-containing id shape —
+// "Coldroom Bucket - 1859" — which the generic prefix match above would
+// otherwise wrongly truncate down to just "BUCKET-1859" (it matches "Bucket"
+// anywhere in the text). Check for this shape first and preserve it whole.
+const COLDROOM_BUCKET_RE = /coldroom\s*bucket[\s-]*(\d+)/i;
 
 /**
  * A camera decode and a Honeywell-style HID/keyboard-wedge scan both end up
@@ -74,6 +78,8 @@ function extractCode(raw: string): string {
       // noise-tolerant prefix match below.
     }
   }
+  const coldroomMatch = trimmed.match(COLDROOM_BUCKET_RE);
+  if (coldroomMatch) return `Coldroom Bucket - ${coldroomMatch[1]}`;
   const match = trimmed.match(PREFIXED_ID_RE);
   if (match) return match[0].replace(/\s+/g, '').toUpperCase();
   return trimmed;

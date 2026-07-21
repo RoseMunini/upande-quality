@@ -1,11 +1,12 @@
 import { bucketReceivingApi } from './api';
 
-export type BucketStatus = {
-  status: string;
+export type FoundBucket = {
+  bucketId: string;
   itemCode: string;
-  greenhouse: string;
   farm: string;
-  receivedQty: number;
+  greenhouse: string;
+  qty: number;
+  stockEntryType: string;
 };
 
 export type SubmitOutcome = { kind: 'ok'; message?: string } | { kind: 'error'; message: string };
@@ -27,55 +28,49 @@ function errorMessage(res: { error?: string; message?: string }, fallback: strin
 }
 
 export const bucketReceivingRepository = {
-  async loadStatus(
+  async searchRecentBucket(
     bucketId: string,
-  ): Promise<{ kind: 'ok'; status: BucketStatus } | { kind: 'error'; message: string }> {
+  ): Promise<{ kind: 'ok'; bucket: FoundBucket } | { kind: 'error'; message: string }> {
     try {
-      const raw = await bucketReceivingApi.getBucketReceivingStatus(bucketId);
-      if (isFailure(raw)) return { kind: 'error', message: errorMessage(raw, 'Bucket lookup failed.') };
+      const raw = await bucketReceivingApi.searchRecentBucket(bucketId);
+      if (isFailure(raw)) return { kind: 'error', message: errorMessage(raw, 'Bucket search failed.') };
       if (raw.exists === false) return { kind: 'error', message: raw.message ?? 'Bucket not found.' };
       return {
         kind: 'ok',
-        status: {
-          status: raw.status ?? '',
+        bucket: {
+          bucketId: raw.bucket_id ?? bucketId,
           itemCode: raw.item_code ?? '',
-          greenhouse: raw.greenhouse ?? '',
           farm: raw.farm ?? '',
-          receivedQty: raw.received_qty ?? 0,
+          greenhouse: raw.greenhouse ?? '',
+          qty: raw.qty ?? 0,
+          stockEntryType: raw.stock_entry_type ?? '',
         },
       };
     } catch (err) {
-      return { kind: 'error', message: err instanceof Error ? err.message : 'Failed to look up bucket.' };
+      return { kind: 'error', message: err instanceof Error ? err.message : 'Failed to search bucket.' };
     }
   },
 
-  async receiveBucket(params: {
-    bucketId: string;
-    isBunched: boolean;
-    bunchSize?: number;
-    numberOfBunches?: number;
-  }): Promise<{ kind: 'ok'; qty: number; variety: string; greenhouse: string } | { kind: 'error'; message: string }> {
+  async rejectBucket(params: { bucketId: string; quantity: number; reason: string; notes?: string }): Promise<SubmitOutcome> {
     try {
-      const res = await bucketReceivingApi.receiveBucket(params);
-      if (isFailure(res)) return { kind: 'error', message: errorMessage(res, 'Failed to receive bucket.') };
-      return { kind: 'ok', qty: res.qty ?? 0, variety: res.variety ?? '', greenhouse: res.greenhouse ?? '' };
+      const res = await bucketReceivingApi.rejectBucket(params);
+      if (isFailure(res)) return { kind: 'error', message: errorMessage(res, 'Failed to record reject.') };
+      return { kind: 'ok', message: res.message };
     } catch (err) {
-      return { kind: 'error', message: err instanceof Error ? err.message : 'Failed to receive bucket.' };
+      return { kind: 'error', message: err instanceof Error ? err.message : 'Failed to record reject.' };
     }
   },
 
-  async submitReject(params: {
+  async submitQuarantineReject(params: {
     bucketId: string;
-    farm?: string;
     greenhouse?: string;
     variety?: string;
     quantity: number;
     reason: string;
     notes?: string;
-    section?: 'receiving_reject' | 'quarantine_reject';
   }): Promise<SubmitOutcome> {
     try {
-      const res = await bucketReceivingApi.submitReject(params);
+      const res = await bucketReceivingApi.submitQuarantineReject(params);
       if (isFailure(res)) return { kind: 'error', message: errorMessage(res, 'Failed to record reject.') };
       return { kind: 'ok', message: res.message };
     } catch (err) {
