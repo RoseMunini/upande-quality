@@ -70,6 +70,9 @@ function extractCode(raw: string): string {
         parsed.emp_id ??
         parsed.employee_number ??
         parsed.employee ??
+        parsed.grader ??
+        parsed.grader_id ??
+        parsed.staff_id ??
         parsed.id ??
         parsed.name;
       if (id) return String(id).trim().toUpperCase();
