@@ -9,6 +9,7 @@ import { Segmented } from '@/src/core/ui/Segmented';
 import { ScanField, type ScanFieldHandle } from '@/src/core/scanning/ScanField';
 import { focusWhenReady } from '@/src/core/scanning/focus';
 import { useToast } from '@/src/core/ui/Toast';
+import { useUserStation } from '@/src/core/tenant/user-station';
 import { COLORS, fontFamily, fontSize, spacing } from '@/src/core/theme';
 import { useBucketReceivingStore } from './store';
 
@@ -31,6 +32,7 @@ export function BucketReceivingScreen() {
   const searchRef = useRef<ScanFieldHandle>(null);
   const quarantineDestRef = useRef<ScanFieldHandle>(null);
   const { showSuccess, showError } = useToast();
+  const { station } = useUserStation();
 
   const searching = useBucketReceivingStore((s) => s.searching);
   const found = useBucketReceivingStore((s) => s.found);
@@ -207,6 +209,7 @@ export function BucketReceivingScreen() {
                 autoFocus={!found}
                 placeholder="Scan or type bucket"
                 editable={!searching && !found}
+                showSoftKeyboard
               />
               {searching ? <Text style={s.help}>Searching…</Text> : null}
               <Text style={s.help}>Only shows buckets received or transferred in the last 24 hours.</Text>
@@ -217,7 +220,7 @@ export function BucketReceivingScreen() {
                 <Card title={found.bucketId}>
                   <Text style={s.summaryLine}>{found.itemCode || 'Unknown variety'}</Text>
                   <Text style={s.summarySub}>
-                    Farm: {found.farm || 'Unknown'}
+                    Farm: {found.farm || station?.userFarm || 'Unknown'}
                     {found.greenhouse ? ` · ${found.greenhouse}` : ''}
                   </Text>
                   <Text style={s.summarySub}>
@@ -336,6 +339,7 @@ export function BucketReceivingScreen() {
                       autoFocus
                       placeholder="Scan or type destination bucket"
                       editable={!transferring}
+                      showSoftKeyboard
                     />
                     {transferring ? <Text style={s.help}>Transferring…</Text> : null}
                   </View>
