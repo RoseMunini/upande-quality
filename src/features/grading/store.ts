@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { gradingRepository, type RejectEntryResult, type Variety } from './repository';
 
 type PassResult = { ok: true; qty: number; variety: string } | { ok: false; message: string };
+type Outcome = { ok: true } | { ok: false; message: string };
 
 type State = {
   passing: boolean;
@@ -11,6 +12,11 @@ type State = {
   varietiesLoading: boolean;
   varietiesError: string | null;
   loadVarieties: () => Promise<void>;
+
+  graderName: string | null;
+  graderLookupLoading: boolean;
+  lookupGrader: (employeeId: string) => Promise<Outcome>;
+  clearGrader: () => void;
 
   passGrading: (bunchId: string, gradedBy: string) => Promise<PassResult>;
   submitRejects: (
@@ -28,6 +34,9 @@ export const useGradingStore = create<State>((set, get) => ({
   varietiesLoading: false,
   varietiesError: null,
 
+  graderName: null,
+  graderLookupLoading: false,
+
   loadVarieties: async () => {
     if (get().varieties.length > 0 || get().varietiesLoading) return;
     set({ varietiesLoading: true, varietiesError: null });
@@ -38,6 +47,17 @@ export const useGradingStore = create<State>((set, get) => ({
     }
     set({ varieties: outcome.varieties, varietiesLoading: false, varietiesError: null });
   },
+
+  lookupGrader: async (employeeId) => {
+    set({ graderLookupLoading: true });
+    const outcome = await gradingRepository.lookupEmployee(employeeId);
+    set({ graderLookupLoading: false });
+    if (outcome.kind === 'error') return { ok: false, message: outcome.message };
+    set({ graderName: outcome.employeeName });
+    return { ok: true };
+  },
+
+  clearGrader: () => set({ graderName: null }),
 
   passGrading: async (bunchId, gradedBy) => {
     set({ passing: true });

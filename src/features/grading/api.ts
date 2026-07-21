@@ -17,6 +17,13 @@ export type RawVariety = {
   item_name: string;
 };
 
+export type RawEmployeeLookup = {
+  exists?: boolean;
+  employee_id?: string;
+  employee_name?: string;
+  message?: string;
+};
+
 export type MethodResponse<T extends object> = T & { error?: string; http_status_code?: number };
 
 export const gradingApi = {
@@ -24,6 +31,15 @@ export const gradingApi = {
     return api({
       method: 'POST',
       url: '/api/method/list_item_varieties',
+      validateStatus: () => true,
+    });
+  },
+
+  lookupEmployee(employeeId: string): Promise<MethodResponse<RawEmployeeLookup>> {
+    return api({
+      method: 'POST',
+      url: '/api/method/lookup_employee',
+      data: { employee_id: employeeId },
       validateStatus: () => true,
     });
   },
