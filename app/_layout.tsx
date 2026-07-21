@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Updates from 'expo-updates';
 import { useFonts, DMSans_400Regular, DMSans_500Medium } from '@expo-google-fonts/dm-sans';
 import { Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import 'react-native-gesture-handler';
@@ -37,6 +38,26 @@ export default function RootLayout() {
     hydrate();
     initNetwork();
   }, [hydrate, initNetwork]);
+
+  // Apply any already-downloaded OTA update immediately, and check for a new
+  // one on every cold start — without this, expo-updates' default behavior
+  // downloads a new update in the background but only applies it on the NEXT
+  // launch after that, so a fix can silently sit undelivered for a full extra
+  // app reopen.
+  useEffect(() => {
+    if (!Updates.isEnabled) return;
+    (async () => {
+      try {
+        const check = await Updates.checkForUpdateAsync();
+        if (check.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch {
+        // Offline or update server unreachable — carry on with the current bundle.
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded && hydrated) SplashScreen.hideAsync().catch(() => {});
