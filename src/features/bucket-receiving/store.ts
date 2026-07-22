@@ -15,6 +15,11 @@ type State = {
   quarantining: boolean;
   quarantineFoundBucket: () => Promise<Outcome>;
 
+  // Quarantine a bucket that hasn't been received or transferred yet — no
+  // backend lookup first, just a direct record with a QC-typed qty.
+  quarantiningDirect: boolean;
+  quarantineDirect: (bucketId: string, qty: number) => Promise<Outcome>;
+
   // Quarantine Review — independent of the search above; can review buckets
   // quarantined in a previous session too.
   transferring: boolean;
@@ -36,6 +41,7 @@ export const useBucketReceivingStore = create<State>((set, get) => ({
 
   rejecting: false,
   quarantining: false,
+  quarantiningDirect: false,
 
   transferring: false,
   usedDestinationBucketIds: [],
@@ -81,6 +87,14 @@ export const useBucketReceivingStore = create<State>((set, get) => ({
     set({ quarantining: false });
     if (outcome.kind === 'error') return { ok: false, message: outcome.message };
     set({ found: null });
+    return { ok: true };
+  },
+
+  quarantineDirect: async (bucketId, qty) => {
+    set({ quarantiningDirect: true });
+    const outcome = await bucketReceivingRepository.quarantineBucket(bucketId, qty);
+    set({ quarantiningDirect: false });
+    if (outcome.kind === 'error') return { ok: false, message: outcome.message };
     return { ok: true };
   },
 

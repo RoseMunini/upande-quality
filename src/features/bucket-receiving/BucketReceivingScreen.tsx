@@ -42,6 +42,8 @@ export function BucketReceivingScreen() {
   const submitFoundReject = useBucketReceivingStore((s) => s.submitFoundReject);
   const quarantining = useBucketReceivingStore((s) => s.quarantining);
   const quarantineFoundBucket = useBucketReceivingStore((s) => s.quarantineFoundBucket);
+  const quarantiningDirect = useBucketReceivingStore((s) => s.quarantiningDirect);
+  const quarantineDirect = useBucketReceivingStore((s) => s.quarantineDirect);
 
   const transferring = useBucketReceivingStore((s) => s.transferring);
   const quarantineList = useBucketReceivingStore((s) => s.quarantineList);
@@ -55,6 +57,9 @@ export function BucketReceivingScreen() {
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectCounts, setRejectCounts] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState('');
+
+  const [notFoundBucketId, setNotFoundBucketId] = useState<string | null>(null);
+  const [quickQty, setQuickQty] = useState('');
 
   const [reviewingBucketId, setReviewingBucketId] = useState<string | null>(null);
   const [reviewAction, setReviewAction] = useState<'accept' | 'reject' | null>(null);
@@ -80,15 +85,38 @@ export function BucketReceivingScreen() {
   const onSearch = async (raw: string) => {
     const bucketId = raw.trim();
     if (!bucketId) return;
+    setNotFoundBucketId(null);
+    setQuickQty('');
     const outcome = await searchBucket(bucketId);
     if (!outcome.ok) {
       showError(outcome.message);
+      setNotFoundBucketId(bucketId);
       focusWhenReady(searchRef);
     }
   };
 
   const onScanAnother = () => {
     clearFound();
+    setNotFoundBucketId(null);
+    setQuickQty('');
+    focusWhenReady(searchRef);
+  };
+
+  const onQuarantineDirect = async () => {
+    if (!notFoundBucketId) return;
+    const qty = parseInt(quickQty.replace(/[^0-9]/g, ''), 10);
+    if (!qty) {
+      showError('Enter how many stems are in this bucket.');
+      return;
+    }
+    const outcome = await quarantineDirect(notFoundBucketId, qty);
+    if (!outcome.ok) {
+      showError(outcome.message);
+      return;
+    }
+    showSuccess(`${notFoundBucketId} sent to quarantine.`);
+    setNotFoundBucketId(null);
+    setQuickQty('');
     focusWhenReady(searchRef);
   };
 
@@ -214,6 +242,27 @@ export function BucketReceivingScreen() {
               {searching ? <Text style={s.help}>Searching…</Text> : null}
               <Text style={s.help}>Only shows buckets received or transferred in the last 24 hours.</Text>
             </Card>
+
+            {!found && notFoundBucketId ? (
+              <Card title={notFoundBucketId}>
+                <Text style={s.help}>
+                  Not received or transferred yet. If you're rejecting/quarantining it straight off the
+                  trolley, record it directly below.
+                </Text>
+                <LabeledInput
+                  label="Stems in this bucket"
+                  value={quickQty}
+                  onChangeText={(t) => setQuickQty(t.replace(/[^0-9]/g, ''))}
+                  keyboardType="number-pad"
+                  placeholder="Qty"
+                />
+                <Button
+                  label={quarantiningDirect ? 'Sending…' : 'Quarantine directly'}
+                  loading={quarantiningDirect}
+                  onPress={onQuarantineDirect}
+                />
+              </Card>
+            ) : null}
 
             {found ? (
               <>
