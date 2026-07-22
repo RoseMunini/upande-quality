@@ -92,9 +92,9 @@ export const bucketReceivingRepository = {
     }
   },
 
-  async quarantineBucket(sourceBucketId: string): Promise<SubmitOutcome> {
+  async quarantineBucket(sourceBucketId: string, qty?: number): Promise<SubmitOutcome> {
     try {
-      const res = await bucketReceivingApi.quarantineBucket(sourceBucketId);
+      const res = await bucketReceivingApi.quarantineBucket(sourceBucketId, qty);
       if (isFailure(res)) return { kind: 'error', message: errorMessage(res, 'Failed to quarantine bucket.') };
       return { kind: 'ok', message: res.message };
     } catch (err) {

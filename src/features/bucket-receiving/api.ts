@@ -122,11 +122,11 @@ export const bucketReceivingApi = {
     });
   },
 
-  quarantineBucket(sourceBucketId: string): Promise<MethodResponse<RawQuarantineResult>> {
+  quarantineBucket(sourceBucketId: string, qty?: number): Promise<MethodResponse<RawQuarantineResult>> {
     return api({
       method: 'POST',
       url: '/api/method/quarantine_bucket',
-      data: { source_bucket_id: sourceBucketId },
+      data: { source_bucket_id: sourceBucketId, qty },
       validateStatus: () => true,
     });
   },
