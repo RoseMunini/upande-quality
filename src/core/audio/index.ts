@@ -2,9 +2,9 @@ import { createAudioPlayer, type AudioPlayer } from 'expo-audio';
 import { useSettingsStore } from '@/src/core/features/settings/store';
 
 const sources = {
-  beep: require('@/assets/sounds/beep.wav'),
-  submit: require('@/assets/sounds/submit.wav'),
-  error: require('@/assets/sounds/error.wav'),
+  beep: require('@/assets/sounds/beep.mp3'),
+  submit: require('@/assets/sounds/submit.mp3'),
+  error: require('@/assets/sounds/error.mp3'),
 } as const;
 
 type SoundKey = keyof typeof sources;
