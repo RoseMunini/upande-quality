@@ -70,6 +70,11 @@ export function ProfileDrawer() {
     router.push('/packhouse-qc');
   };
 
+  const goToShelving = () => {
+    close();
+    router.push('/shelving');
+  };
+
   const goToInspectionLog = () => {
     close();
     router.push('/inspection-log');
@@ -78,6 +83,11 @@ export function ProfileDrawer() {
   const goToTraceability = () => {
     close();
     router.push('/traceability');
+  };
+
+  const goToDiscards = () => {
+    close();
+    router.push('/discards');
   };
 
   const onSettings = () => {
@@ -127,8 +137,10 @@ export function ProfileDrawer() {
           <MenuRow icon="download-outline" label="Receiving" onPress={goToReceiving} />
           <MenuRow icon="checkmark-done-outline" label="Intake QC" onPress={goToIntakeQc} />
           <MenuRow icon="cube-outline" label="Packhouse QC" onPress={goToPackhouseQc} />
+          <MenuRow icon="file-tray-stacked-outline" label="Shelving" onPress={goToShelving} />
           <MenuRow icon="checkbox-outline" label="Inspection Log" onPress={goToInspectionLog} />
           <MenuRow icon="search-outline" label="Traceability" onPress={goToTraceability} />
+          <MenuRow icon="trash-outline" label="Discards" onPress={goToDiscards} />
           <MenuRow icon="hardware-chip-outline" label="Configure Station" onPress={goToConfigureStation} />
           <MenuRow icon="settings-outline" label="Settings" onPress={onSettings} />
           <MenuRow icon="log-out-outline" label="Sign Out" onPress={onSignOut} danger />

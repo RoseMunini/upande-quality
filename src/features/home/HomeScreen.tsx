@@ -38,10 +38,22 @@ const CARDS: NavCard[] = [
     href: '/packhouse-qc',
   },
   {
+    icon: 'file-tray-stacked-outline',
+    title: 'Shelving',
+    description: 'Scan a shelf then buckets to place them in the coldroom.',
+    href: '/shelving',
+  },
+  {
     icon: 'checkbox-outline',
     title: 'Inspection Log',
     description: 'Temperature and cleaning history for the coldroom.',
     href: '/inspection-log',
+  },
+  {
+    icon: 'trash-outline',
+    title: 'Discards',
+    description: 'Scan a bucket to discard it.',
+    href: '/discards',
   },
   {
     icon: 'hardware-chip-outline',
