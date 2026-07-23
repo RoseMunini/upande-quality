@@ -215,7 +215,7 @@ export function BucketReceivingScreen() {
   };
 
   return (
-    <Screen title="Intake QC" scroll={false}>
+    <Screen title="Intake Rejects" scroll={false}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
         <Card>
           <Segmented
@@ -246,7 +246,7 @@ export function BucketReceivingScreen() {
             {!found && notFoundBucketId ? (
               <Card title={notFoundBucketId}>
                 <Text style={s.help}>
-                  Not received or transferred yet. If you're rejecting/quarantining it straight off the
+                  Not received or transferred yet. If you&apos;re rejecting/quarantining it straight off the
                   trolley, record it directly below.
                 </Text>
                 <LabeledInput
