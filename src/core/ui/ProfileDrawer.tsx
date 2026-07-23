@@ -174,7 +174,7 @@ const s = StyleSheet.create({
     backgroundColor: COLORS.surface,
     paddingHorizontal: spacing.lg,
   },
-  profile: { alignItems: 'center', paddingBottom: spacing.lg },
+  profile: { alignItems: 'flex-start', paddingBottom: spacing.lg },
   avatar: {
     width: 64,
     height: 64,
