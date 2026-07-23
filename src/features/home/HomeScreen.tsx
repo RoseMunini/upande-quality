@@ -32,7 +32,7 @@ const CARDS: NavCard[] = [
     href: '/intake-qc',
   },
   {
-    icon: 'ribbon-outline',
+    icon: 'cube-outline',
     title: 'Packhouse QC',
     description: 'Choose which quality check you want to run.',
     href: '/packhouse-qc',

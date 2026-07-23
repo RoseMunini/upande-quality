@@ -14,7 +14,7 @@ const ICONS: Record<string, TabIconPair> = {
   home: { outline: 'home-outline', filled: 'home' },
   receiving: { outline: 'download-outline', filled: 'download' },
   'intake-qc': { outline: 'checkmark-done-outline', filled: 'checkmark-done' },
-  'packhouse-qc': { outline: 'ribbon-outline', filled: 'ribbon' },
+  'packhouse-qc': { outline: 'cube-outline', filled: 'cube' },
   'inspection-log': { outline: 'checkbox-outline', filled: 'checkbox' },
   traceability: { outline: 'search-outline', filled: 'search' },
   'configure-station': { outline: 'hardware-chip-outline', filled: 'hardware-chip' },
