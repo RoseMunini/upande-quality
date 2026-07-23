@@ -14,7 +14,7 @@ const ICONS: Record<string, TabIconPair> = {
   home: { outline: 'home-outline', filled: 'home' },
   receiving: { outline: 'download-outline', filled: 'download' },
   'intake-qc': { outline: 'checkmark-done-outline', filled: 'checkmark-done' },
-  'grading-qc': { outline: 'ribbon-outline', filled: 'ribbon' },
+  'packhouse-qc': { outline: 'ribbon-outline', filled: 'ribbon' },
   'inspection-log': { outline: 'checkbox-outline', filled: 'checkbox' },
   traceability: { outline: 'search-outline', filled: 'search' },
   'configure-station': { outline: 'hardware-chip-outline', filled: 'hardware-chip' },
@@ -51,7 +51,7 @@ export default function TabLayout() {
       <Tabs.Screen name="home" options={{ title: 'Home' }} />
       <Tabs.Screen name="receiving" options={{ title: 'Receiving' }} />
       <Tabs.Screen name="intake-qc" options={{ title: 'Intake QC' }} />
-      <Tabs.Screen name="grading-qc" options={{ title: 'Grading' }} />
+      <Tabs.Screen name="packhouse-qc" options={{ title: 'Packhouse QC' }} />
       <Tabs.Screen name="inspection-log" options={{ title: 'Inspection Log' }} />
       <Tabs.Screen name="traceability" options={{ title: 'Traceability' }} />
       <Tabs.Screen name="configure-station" options={{ title: 'Station' }} />
