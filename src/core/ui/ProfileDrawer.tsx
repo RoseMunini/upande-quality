@@ -65,9 +65,9 @@ export function ProfileDrawer() {
     router.push('/intake-qc');
   };
 
-  const goToGradingQc = () => {
+  const goToPackhouseQc = () => {
     close();
-    router.push('/grading-qc');
+    router.push('/packhouse-qc');
   };
 
   const goToInspectionLog = () => {
@@ -126,7 +126,7 @@ export function ProfileDrawer() {
           <MenuRow icon="home-outline" label="Home" onPress={goToHome} />
           <MenuRow icon="download-outline" label="Receiving" onPress={goToReceiving} />
           <MenuRow icon="checkmark-done-outline" label="Intake QC" onPress={goToIntakeQc} />
-          <MenuRow icon="ribbon-outline" label="Grading" onPress={goToGradingQc} />
+          <MenuRow icon="ribbon-outline" label="Packhouse QC" onPress={goToPackhouseQc} />
           <MenuRow icon="checkbox-outline" label="Inspection Log" onPress={goToInspectionLog} />
           <MenuRow icon="search-outline" label="Traceability" onPress={goToTraceability} />
           <MenuRow icon="hardware-chip-outline" label="Configure Station" onPress={goToConfigureStation} />

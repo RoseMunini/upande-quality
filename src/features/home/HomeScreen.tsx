@@ -33,9 +33,9 @@ const CARDS: NavCard[] = [
   },
   {
     icon: 'ribbon-outline',
-    title: 'Grading',
-    description: 'Pass graded bunches or record grading rejects.',
-    href: '/grading-qc',
+    title: 'Packhouse QC',
+    description: 'Choose which quality check you want to run.',
+    href: '/packhouse-qc',
   },
   {
     icon: 'checkbox-outline',
