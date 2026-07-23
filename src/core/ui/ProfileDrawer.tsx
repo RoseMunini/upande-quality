@@ -124,7 +124,7 @@ export function ProfileDrawer() {
           <View style={s.divider} />
 
           <MenuRow icon="home-outline" label="Home" onPress={goToHome} />
-          <MenuRow icon="cube-outline" label="Receiving" onPress={goToReceiving} />
+          <MenuRow icon="download-outline" label="Receiving" onPress={goToReceiving} />
           <MenuRow icon="checkmark-done-outline" label="Intake QC" onPress={goToIntakeQc} />
           <MenuRow icon="ribbon-outline" label="Grading" onPress={goToGradingQc} />
           <MenuRow icon="checkbox-outline" label="Inspection Log" onPress={goToInspectionLog} />

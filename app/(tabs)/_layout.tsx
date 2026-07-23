@@ -12,7 +12,7 @@ type TabIconPair = {
 
 const ICONS: Record<string, TabIconPair> = {
   home: { outline: 'home-outline', filled: 'home' },
-  receiving: { outline: 'cube-outline', filled: 'cube' },
+  receiving: { outline: 'download-outline', filled: 'download' },
   'intake-qc': { outline: 'checkmark-done-outline', filled: 'checkmark-done' },
   'grading-qc': { outline: 'ribbon-outline', filled: 'ribbon' },
   'inspection-log': { outline: 'checkbox-outline', filled: 'checkbox' },
