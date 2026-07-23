@@ -13,7 +13,7 @@ type NavCard = {
 
 const CARDS: NavCard[] = [
   {
-    icon: 'cube-outline',
+    icon: 'download-outline',
     title: 'Receiving',
     description: 'Scan buckets in from the greenhouse and record what arrived.',
     href: '/receiving',
