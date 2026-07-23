@@ -7,5 +7,5 @@ import { useAuthStore } from '@/src/core/auth/store';
 // never mounts and the app stays hidden behind the logo forever.
 export default function Index() {
   const hasSession = useAuthStore((s) => s.hasSession);
-  return <Redirect href={hasSession ? '/(tabs)/intake-qc' : '/login'} />;
+  return <Redirect href={hasSession ? '/(tabs)/home' : '/login'} />;
 }
