@@ -50,6 +50,16 @@ export function ProfileDrawer() {
     router.push('/configure-station');
   };
 
+  const goToHome = () => {
+    close();
+    router.push('/home');
+  };
+
+  const goToReceiving = () => {
+    close();
+    router.push('/receiving');
+  };
+
   const goToIntakeQc = () => {
     close();
     router.push('/intake-qc');
@@ -113,7 +123,9 @@ export function ProfileDrawer() {
 
           <View style={s.divider} />
 
-          <MenuRow icon="checkmark-done-outline" label="Intake Rejects" onPress={goToIntakeQc} />
+          <MenuRow icon="home-outline" label="Home" onPress={goToHome} />
+          <MenuRow icon="cube-outline" label="Receiving" onPress={goToReceiving} />
+          <MenuRow icon="checkmark-done-outline" label="Intake QC" onPress={goToIntakeQc} />
           <MenuRow icon="ribbon-outline" label="Grading" onPress={goToGradingQc} />
           <MenuRow icon="checkbox-outline" label="Inspection Log" onPress={goToInspectionLog} />
           <MenuRow icon="search-outline" label="Traceability" onPress={goToTraceability} />

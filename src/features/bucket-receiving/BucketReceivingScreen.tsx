@@ -215,7 +215,7 @@ export function BucketReceivingScreen() {
   };
 
   return (
-    <Screen title="Intake Rejects" scroll={false}>
+    <Screen title="Intake QC" scroll={false}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
         <Card>
           <Segmented
