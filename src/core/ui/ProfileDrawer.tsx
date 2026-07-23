@@ -22,7 +22,6 @@ export function ProfileDrawer() {
   const email = useAuthStore((s) => s.email);
   const instanceUrl = useAuthStore((s) => s.instanceUrl);
   const forgetDevice = useAuthStore((s) => s.forgetDevice);
-  const isQcSupervisor = useAuthStore((s) => s.hasRole('QC Supervisor'));
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -64,11 +63,6 @@ export function ProfileDrawer() {
   const goToInspectionLog = () => {
     close();
     router.push('/inspection-log');
-  };
-
-  const goToPendingIsolations = () => {
-    close();
-    router.push('/pending-isolations');
   };
 
   const goToTraceability = () => {
@@ -119,13 +113,10 @@ export function ProfileDrawer() {
 
           <View style={s.divider} />
 
-          <MenuRow icon="checkmark-done-outline" label="Intake QC" onPress={goToIntakeQc} />
+          <MenuRow icon="checkmark-done-outline" label="Intake Rejects" onPress={goToIntakeQc} />
           <MenuRow icon="ribbon-outline" label="Grading" onPress={goToGradingQc} />
           <MenuRow icon="checkbox-outline" label="Inspection Log" onPress={goToInspectionLog} />
           <MenuRow icon="search-outline" label="Traceability" onPress={goToTraceability} />
-          {isQcSupervisor ? (
-            <MenuRow icon="alert-circle-outline" label="Pending Isolations" onPress={goToPendingIsolations} />
-          ) : null}
           <MenuRow icon="hardware-chip-outline" label="Configure Station" onPress={goToConfigureStation} />
           <MenuRow icon="settings-outline" label="Settings" onPress={onSettings} />
           <MenuRow icon="log-out-outline" label="Sign Out" onPress={onSignOut} danger />
