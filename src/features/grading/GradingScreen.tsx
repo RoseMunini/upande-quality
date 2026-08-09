@@ -15,16 +15,17 @@ import { COLORS, fontFamily, fontSize, spacing } from '@/src/core/theme';
 import { useGradingStore } from './store';
 
 const REASONS = [
-  'Bent Stem',
+  'Broken Stem',
   'Disease/Pest Damage',
   'Undersized',
   'Bud Damage',
   'Bruised Petals',
   'Wrong Variety',
-  'Overmature',
-  'Botrytis',
+  'Overmature / Open Flowers',
+  'Head Botrytis',
   'Aphids',
   'Caterpillar',
+  'Drooping',
 ];
 
 type Mode = 'pass' | 'reject';
