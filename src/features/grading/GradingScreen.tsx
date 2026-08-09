@@ -6,7 +6,6 @@ import { Card, Alert } from '@/src/core/ui/Card';
 import { Button } from '@/src/core/ui/Button';
 import { LabeledInput } from '@/src/core/ui/LabeledInput';
 import { Dropdown } from '@/src/core/ui/Dropdown';
-import { CalendarPicker } from '@/src/core/ui/CalendarPicker';
 import { Segmented } from '@/src/core/ui/Segmented';
 import { ScanField, type ScanFieldHandle } from '@/src/core/scanning/ScanField';
 import { focusWhenReady } from '@/src/core/scanning/focus';
@@ -29,12 +28,6 @@ const REASONS = [
 ];
 
 type Mode = 'pass' | 'reject';
-
-function todayIso(): string {
-  const now = new Date();
-  const pad = (n: number) => (n < 10 ? `0${n}` : String(n));
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
 
 export function GradingScreen() {
   const graderRef = useRef<ScanFieldHandle>(null);
@@ -61,7 +54,6 @@ export function GradingScreen() {
   const [variety, setVariety] = useState('');
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState('');
-  const [rejectDate, setRejectDate] = useState(todayIso);
 
   useEffect(() => {
     if (mode === 'reject') loadVarieties();
@@ -125,14 +117,13 @@ export function GradingScreen() {
       showError('Add a quantity to at least one reason.');
       return;
     }
-    const results = await submitRejects(variety.trim(), entries, notes, rejectDate);
+    const results = await submitRejects(variety.trim(), entries, notes);
     const failed = results.filter((r) => r.kind === 'error');
     if (failed.length === 0) {
       showSuccess(`${totalRejectQty} stems rejected across ${entries.length} reason(s).`);
       setVariety('');
       setCounts({});
       setNotes('');
-      setRejectDate(todayIso());
     } else {
       showError(`${failed.length} of ${entries.length} reject entries failed: ${failed.map((f) => f.reason).join(', ')}`);
     }
@@ -196,10 +187,6 @@ export function GradingScreen() {
           </>
         ) : (
           <>
-            <Card title="Date">
-              <CalendarPicker label="" value={rejectDate} onChange={setRejectDate} />
-            </Card>
-
             <Card title="Variety">
               <Dropdown
                 label=""

@@ -58,7 +58,6 @@ export const gradingApi = {
     quantity: number;
     reason: string;
     notes?: string;
-    date?: string;
   }): Promise<MethodResponse<RawRejectResult>> {
     return api({
       method: 'POST',
@@ -69,7 +68,6 @@ export const gradingApi = {
         reason: params.reason,
         notes: params.notes,
         variety: params.variety,
-        date: params.date,
       },
       validateStatus: () => true,
     });
