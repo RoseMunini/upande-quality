@@ -1,7 +1,7 @@
 import { receivingApi } from './api';
 
 export type ReceiveOutcome =
-  | { kind: 'ok'; variety: string; greenhouse: string; qty: number }
+  | { kind: 'ok'; variety: string; greenhouse: string; qty: number; overrideApplied: boolean }
   | { kind: 'error'; message: string };
 
 function isFailure(res: { error?: string; http_status_code?: number }): boolean {
@@ -18,11 +18,18 @@ export const receivingRepository = {
     isBunched: boolean;
     bunchSize?: number;
     numberOfBunches?: number;
+    overrideQty?: number;
   }): Promise<ReceiveOutcome> {
     try {
       const res = await receivingApi.receiveBucket(params);
       if (isFailure(res)) return { kind: 'error', message: errorMessage(res, 'Failed to receive bucket.') };
-      return { kind: 'ok', variety: res.variety ?? '', greenhouse: res.greenhouse ?? '', qty: res.qty ?? 0 };
+      return {
+        kind: 'ok',
+        variety: res.variety ?? '',
+        greenhouse: res.greenhouse ?? '',
+        qty: res.qty ?? 0,
+        overrideApplied: res.override_applied ?? false,
+      };
     } catch (err) {
       return { kind: 'error', message: err instanceof Error ? err.message : 'Failed to receive bucket.' };
     }

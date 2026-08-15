@@ -25,6 +25,10 @@ export function ReceivingScreen() {
   const setBunchSize = useReceivingStore((s) => s.setBunchSize);
   const numberOfBunches = useReceivingStore((s) => s.numberOfBunches);
   const setNumberOfBunches = useReceivingStore((s) => s.setNumberOfBunches);
+  const isBalance = useReceivingStore((s) => s.isBalance);
+  const setIsBalance = useReceivingStore((s) => s.setIsBalance);
+  const balanceQty = useReceivingStore((s) => s.balanceQty);
+  const setBalanceQty = useReceivingStore((s) => s.setBalanceQty);
   const receiving = useReceivingStore((s) => s.receiving);
   const receiveBucket = useReceivingStore((s) => s.receiveBucket);
 
@@ -36,13 +40,19 @@ export function ReceivingScreen() {
       focusWhenReady(scanRef);
       return;
     }
+    if (isBalance && !balanceQty.trim()) {
+      showError('Enter the actual stem count for this balance bucket before scanning.');
+      focusWhenReady(scanRef);
+      return;
+    }
     const outcome = await receiveBucket(bucketId);
     if (!outcome.ok) {
       showError(outcome.message);
       focusWhenReady(scanRef);
       return;
     }
-    showSuccess(`${bucketId} received — ${outcome.qty} stems (${outcome.variety}).`);
+    const label = outcome.overrideApplied ? 'Balance bucket received' : `${bucketId} received`;
+    showSuccess(`${label} — ${outcome.qty} stems (${outcome.variety}).`);
     focusWhenReady(scanRef);
   };
 
@@ -88,6 +98,31 @@ export function ReceivingScreen() {
             </View>
           ) : null}
         </Card>
+
+        {!isBunched ? (
+          <Card>
+            <View style={s.toggleRow}>
+              <View style={s.flex}>
+                <Text style={s.toggleTitle}>Balance Bucket</Text>
+                <Text style={s.toggleSub}>
+                  {isBalance ? 'Less than the standard bucket rate' : 'Off — receives at standard bucket rate'}
+                </Text>
+              </View>
+              <Switch value={isBalance} onValueChange={setIsBalance} />
+            </View>
+            {isBalance ? (
+              <View style={{ marginTop: spacing.md }}>
+                <LabeledInput
+                  label="Actual stem count"
+                  value={balanceQty}
+                  onChangeText={(t) => setBalanceQty(t.replace(/[^0-9]/g, ''))}
+                  keyboardType="number-pad"
+                  placeholder="e.g. 18"
+                />
+              </View>
+            ) : null}
+          </Card>
+        ) : null}
 
         <Card title="Scan Bucket QR">
           <ScanField

@@ -6,6 +6,7 @@ export type RawReceiveResult = {
   greenhouse?: string;
   qty?: number;
   is_bunched?: boolean;
+  override_applied?: boolean;
   message?: string;
 };
 
@@ -17,6 +18,7 @@ export const receivingApi = {
     isBunched: boolean;
     bunchSize?: number;
     numberOfBunches?: number;
+    overrideQty?: number;
   }): Promise<MethodResponse<RawReceiveResult>> {
     return api({
       method: 'POST',
@@ -26,6 +28,7 @@ export const receivingApi = {
         is_bunched: params.isBunched,
         bunch_size: params.bunchSize,
         number_of_bunches: params.numberOfBunches,
+        override_qty: params.overrideQty,
       },
       validateStatus: () => true,
     });
