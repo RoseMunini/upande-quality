@@ -10,6 +10,8 @@ export type RawPassResult = {
 export type RawRejectResult = {
   stock_entry?: string;
   message?: string;
+  backdated?: boolean;
+  backdate_error?: string;
 };
 
 export type RawVariety = {

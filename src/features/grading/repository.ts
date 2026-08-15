@@ -6,7 +6,9 @@ export type PassOutcome =
   | { kind: 'ok'; stockEntry: string; qty: number; variety: string }
   | { kind: 'error'; message: string };
 
-export type RejectEntryResult = { reason: string; kind: 'ok' } | { reason: string; kind: 'error'; message: string };
+export type RejectEntryResult =
+  | { reason: string; kind: 'ok'; backdated: boolean; backdateError?: string }
+  | { reason: string; kind: 'error'; message: string };
 
 export type VarietiesOutcome = { kind: 'ok'; varieties: Variety[] } | { kind: 'error'; message: string };
 
@@ -76,7 +78,12 @@ export const gradingRepository = {
         if (isFailure(res)) {
           results.push({ reason: entry.reason, kind: 'error', message: errorMessage(res, 'Failed to record reject.') });
         } else {
-          results.push({ reason: entry.reason, kind: 'ok' });
+          results.push({
+            reason: entry.reason,
+            kind: 'ok',
+            backdated: res.backdated ?? false,
+            backdateError: res.backdate_error,
+          });
         }
       } catch (err) {
         results.push({

@@ -128,7 +128,12 @@ export function GradingScreen() {
     const results = await submitRejects(variety.trim(), entries, notes, rejectDate);
     const failed = results.filter((r) => r.kind === 'error');
     if (failed.length === 0) {
-      showSuccess(`${totalRejectQty} stems rejected across ${entries.length} reason(s).`);
+      const backdateIssue = results.find((r) => r.kind === 'ok' && !r.backdated && r.backdateError);
+      let message = `${totalRejectQty} stems rejected across ${entries.length} reason(s).`;
+      if (backdateIssue && backdateIssue.kind === 'ok') {
+        message += ` ${backdateIssue.backdateError}`;
+      }
+      showSuccess(message);
       setVariety('');
       setCounts({});
       setNotes('');
