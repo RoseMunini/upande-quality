@@ -23,6 +23,7 @@ type State = {
     variety: string,
     entries: { reason: string; quantity: number }[],
     notes: string,
+    date?: string,
   ) => Promise<RejectEntryResult[]>;
 };
 
@@ -67,9 +68,9 @@ export const useGradingStore = create<State>((set, get) => ({
     return { ok: true, qty: outcome.qty, variety: outcome.variety };
   },
 
-  submitRejects: async (variety, entries, notes) => {
+  submitRejects: async (variety, entries, notes, date) => {
     set({ rejecting: true });
-    const results = await gradingRepository.submitRejects(variety, entries, notes);
+    const results = await gradingRepository.submitRejects(variety, entries, notes, date);
     set({ rejecting: false });
     return results;
   },

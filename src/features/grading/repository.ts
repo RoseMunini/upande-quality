@@ -61,6 +61,7 @@ export const gradingRepository = {
     variety: string,
     entries: { reason: string; quantity: number }[],
     notes: string,
+    date?: string,
   ): Promise<RejectEntryResult[]> {
     const results: RejectEntryResult[] = [];
     for (const entry of entries) {
@@ -70,6 +71,7 @@ export const gradingRepository = {
           quantity: entry.quantity,
           reason: entry.reason,
           notes,
+          date,
         });
         if (isFailure(res)) {
           results.push({ reason: entry.reason, kind: 'error', message: errorMessage(res, 'Failed to record reject.') });
