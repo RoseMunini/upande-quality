@@ -137,7 +137,6 @@ export function GradingScreen() {
       setVariety('');
       setCounts({});
       setNotes('');
-      setRejectDate(todayIso());
     } else {
       showError(`${failed.length} of ${entries.length} reject entries failed: ${failed.map((f) => f.reason).join(', ')}`);
     }
