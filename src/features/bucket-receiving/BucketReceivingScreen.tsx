@@ -15,6 +15,7 @@ import { useBucketReceivingStore } from './store';
 
 const REASONS = [
   'Bent Stem',
+  'Broken Stem',
   'Disease/Pest Damage',
   'Undersized',
   'Bud Damage',
