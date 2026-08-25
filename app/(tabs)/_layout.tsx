@@ -54,7 +54,7 @@ export default function TabLayout() {
       <Tabs.Screen name="packhouse-qc" options={{ title: 'Packhouse QC' }} />
       <Tabs.Screen name="shelving" options={{ title: 'Shelving' }} />
       <Tabs.Screen name="traceability" options={{ title: 'Traceability' }} />
-      <Tabs.Screen name="discards" options={{ title: 'Discards' }} />
+      <Tabs.Screen name="discards" options={{ title: 'Low-Market Rejects' }} />
     </Tabs>
   );
 }

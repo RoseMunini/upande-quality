@@ -140,7 +140,7 @@ export function ProfileDrawer() {
           <MenuRow icon="file-tray-stacked-outline" label="Shelving" onPress={goToShelving} />
           <MenuRow icon="checkbox-outline" label="Inspection Log" onPress={goToInspectionLog} />
           <MenuRow icon="search-outline" label="Traceability" onPress={goToTraceability} />
-          <MenuRow icon="trash-outline" label="Discards" onPress={goToDiscards} />
+          <MenuRow icon="trash-outline" label="Low-Market Rejects" onPress={goToDiscards} />
           <MenuRow icon="hardware-chip-outline" label="Configure Station" onPress={goToConfigureStation} />
           <MenuRow icon="settings-outline" label="Settings" onPress={onSettings} />
           <MenuRow icon="log-out-outline" label="Sign Out" onPress={onSignOut} danger />

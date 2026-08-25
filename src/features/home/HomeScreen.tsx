@@ -51,8 +51,8 @@ const CARDS: NavCard[] = [
   },
   {
     icon: 'trash-outline',
-    title: 'Discards',
-    description: 'Scan a bucket to discard it.',
+    title: 'Low-Market Rejects',
+    description: 'Scan a bucket to mark it as a low-market reject.',
     href: '/discards',
   },
   {

@@ -23,15 +23,15 @@ export function DiscardsScreen() {
     if (!outcome.ok) {
       showError(outcome.message);
     } else {
-      showSuccess(`${bucketId} discarded — ${outcome.stems} stems (${outcome.variety}).`);
+      showSuccess(`${bucketId} marked as a low-market reject — ${outcome.stems} stems (${outcome.variety}).`);
     }
     focusWhenReady(scanRef);
   };
 
   return (
-    <Screen title="Discards" scroll={false}>
+    <Screen title="Low-Market Rejects" scroll={false}>
       <View style={{ padding: spacing.lg }}>
-        <Card title="Scan Bucket To Discard">
+        <Card title="Scan Bucket To Reject">
           <ScanField
             ref={scanRef}
             onScan={onScan}
@@ -41,7 +41,7 @@ export function DiscardsScreen() {
             showSoftKeyboard
           />
           <Text style={{ fontSize: fontSize.sm, color: COLORS.textMuted, marginTop: spacing.sm }}>
-            {discardedCount} discarded this session
+            {discardedCount} low-market rejects this session
           </Text>
         </Card>
       </View>
