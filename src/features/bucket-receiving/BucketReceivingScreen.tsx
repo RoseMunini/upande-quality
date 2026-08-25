@@ -29,6 +29,13 @@ const REASONS = [
 
 type TopMode = 'search' | 'quarantine';
 
+/** Clamps one reason's count so the sum across all reasons never exceeds `cap`
+ *  (the bucket's actual stem quantity) — prevents rejecting more than a bucket holds. */
+function clampToCap(counts: Record<string, number>, reason: string, proposed: number, cap: number): number {
+  const othersTotal = Object.entries(counts).reduce((sum, [r, v]) => sum + (r === reason ? 0 : v), 0);
+  return Math.max(0, Math.min(proposed, cap - othersTotal));
+}
+
 export function BucketReceivingScreen() {
   const searchRef = useRef<ScanFieldHandle>(null);
   const quarantineDestRef = useRef<ScanFieldHandle>(null);
@@ -132,13 +139,16 @@ export function BucketReceivingScreen() {
     focusWhenReady(searchRef);
   };
 
+  const bucketCap = found?.qty ?? 0;
+
   const adjustCount = (reason: string, delta: number) => {
-    setRejectCounts((c) => ({ ...c, [reason]: Math.max(0, (c[reason] ?? 0) + delta) }));
+    setRejectCounts((c) => ({ ...c, [reason]: clampToCap(c, reason, (c[reason] ?? 0) + delta, bucketCap) }));
   };
 
   const onTypeCount = (reason: string, text: string) => {
     const digits = text.replace(/[^0-9]/g, '');
-    setRejectCounts((c) => ({ ...c, [reason]: digits === '' ? 0 : parseInt(digits, 10) }));
+    const proposed = digits === '' ? 0 : parseInt(digits, 10);
+    setRejectCounts((c) => ({ ...c, [reason]: clampToCap(c, reason, proposed, bucketCap) }));
   };
 
   const assignedTotal = Object.values(rejectCounts).reduce((a, b) => a + b, 0);
@@ -172,17 +182,20 @@ export function BucketReceivingScreen() {
     setReviewAction(null);
   };
 
+  const reviewingItem = quarantineList.find((q) => q.bucketId === reviewingBucketId);
+  const reviewBucketCap = reviewingItem?.qty ?? 0;
+
   const adjustReviewCount = (reason: string, delta: number) => {
-    setReviewRejectCounts((c) => ({ ...c, [reason]: Math.max(0, (c[reason] ?? 0) + delta) }));
+    setReviewRejectCounts((c) => ({ ...c, [reason]: clampToCap(c, reason, (c[reason] ?? 0) + delta, reviewBucketCap) }));
   };
 
   const onTypeReviewCount = (reason: string, text: string) => {
     const digits = text.replace(/[^0-9]/g, '');
-    setReviewRejectCounts((c) => ({ ...c, [reason]: digits === '' ? 0 : parseInt(digits, 10) }));
+    const proposed = digits === '' ? 0 : parseInt(digits, 10);
+    setReviewRejectCounts((c) => ({ ...c, [reason]: clampToCap(c, reason, proposed, reviewBucketCap) }));
   };
 
   const reviewAssignedTotal = Object.values(reviewRejectCounts).reduce((a, b) => a + b, 0);
-  const reviewingItem = quarantineList.find((q) => q.bucketId === reviewingBucketId);
 
   const onReleaseAsTransfer = async (raw: string) => {
     const destinationBucketId = raw.trim().toUpperCase();
@@ -292,7 +305,7 @@ export function BucketReceivingScreen() {
                     </View>
                   </Card>
                 ) : (
-                  <Card title={`Reject Reasons${assignedTotal > 0 ? ` (${assignedTotal})` : ''}`}>
+                  <Card title={`Reject Reasons (${assignedTotal}/${bucketCap})`}>
                     {REASONS.map((r) => (
                       <View key={r} style={s.reasonRow}>
                         <Text style={s.reasonLabel}>{r}</Text>
@@ -418,7 +431,7 @@ export function BucketReceivingScreen() {
                     ))}
                     <LabeledInput label="Notes" value={reviewNotes} onChangeText={setReviewNotes} placeholder="Optional" multiline />
                     <Button
-                      label={rejecting ? 'Saving…' : `Confirm Reject (${reviewAssignedTotal})`}
+                      label={rejecting ? 'Saving…' : `Confirm Reject (${reviewAssignedTotal}/${reviewBucketCap})`}
                       loading={rejecting}
                       onPress={onReleaseAsReject}
                       disabled={reviewAssignedTotal === 0}
