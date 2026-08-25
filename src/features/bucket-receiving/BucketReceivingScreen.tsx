@@ -25,6 +25,7 @@ const REASONS = [
   'Botrytis',
   'Aphids',
   'Caterpillar',
+  'FCM',
 ];
 
 type TopMode = 'search' | 'quarantine';
