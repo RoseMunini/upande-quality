@@ -5,6 +5,9 @@ export type HistoryEvent = {
   event: string;
   eventTime: string;
   who: string;
+  /** True when `who` is the grader who bunched this (from custom_graded_by),
+   *  not just the record's owner — lets the UI call that out explicitly. */
+  isGrader: boolean;
   remarks: string;
   itemCode: string;
   qty: number;
@@ -44,6 +47,7 @@ export const traceabilityRepository = {
             event: e.event,
             eventTime: e.event_time,
             who: e.graded_by_name || e.graded_by || e.owner,
+            isGrader: !!(e.graded_by_name || e.graded_by),
             remarks: e.remarks ?? '',
             itemCode: e.item_code ?? '',
             qty: e.qty ?? 0,

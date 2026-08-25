@@ -43,6 +43,7 @@ export function TraceabilityScreen() {
   };
 
   const current = history?.current;
+  const graderEvent = history?.events.find((e) => e.isGrader);
 
   return (
     <Screen title="Traceability" scroll={false}>
@@ -69,6 +70,9 @@ export function TraceabilityScreen() {
                       current.stem_length ? ` · ${current.stem_length}` : ''
                     }`}
               </Text>
+              {history.kind === 'bunch' ? (
+                <Text style={s.graderLine}>Graded by: {graderEvent ? graderEvent.who : 'Not yet graded'}</Text>
+              ) : null}
               <Button label="Scan different one" variant="outline" onPress={resetLookup} />
             </Card>
 
@@ -80,7 +84,7 @@ export function TraceabilityScreen() {
                   <View key={`${e.stockEntry}-${i}`} style={s.eventRow}>
                     <Text style={s.eventTitle}>{e.event}</Text>
                     <Text style={s.eventSub}>
-                      {shortTime(e.eventTime)} · {e.who}
+                      {shortTime(e.eventTime)} · {e.isGrader ? `Graded by ${e.who}` : e.who}
                     </Text>
                     {e.qty ? (
                       <Text style={s.eventSub}>
@@ -108,6 +112,7 @@ const s = StyleSheet.create({
   help: { fontSize: 12, color: COLORS.textMuted, marginTop: spacing.xs },
   summaryLine: { fontFamily: fontFamily.semiBold, fontSize: fontSize.md, color: COLORS.text },
   summarySub: { fontSize: fontSize.sm, color: COLORS.textMuted, marginBottom: spacing.sm },
+  graderLine: { fontSize: fontSize.sm, color: COLORS.text, marginBottom: spacing.sm },
   eventRow: {
     paddingVertical: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
