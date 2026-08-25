@@ -17,8 +17,6 @@ export function ReceivingScreen() {
   const scanRef = useRef<ScanFieldHandle>(null);
   const { showSuccess, showError } = useToast();
 
-  const batchMode = useReceivingStore((s) => s.batchMode);
-  const setBatchMode = useReceivingStore((s) => s.setBatchMode);
   const isBunched = useReceivingStore((s) => s.isBunched);
   const setIsBunched = useReceivingStore((s) => s.setIsBunched);
   const bunchSize = useReceivingStore((s) => s.bunchSize);
@@ -56,19 +54,22 @@ export function ReceivingScreen() {
     focusWhenReady(scanRef);
   };
 
+  const activeSummary = isBunched
+    ? bunchSize && numberOfBunches
+      ? `Bunch(${bunchSize}) × ${numberOfBunches}`
+      : 'Bunched — select size and count below'
+    : isBalance
+      ? balanceQty
+        ? `Balance bucket — ${balanceQty} stems`
+        : 'Balance bucket — enter stem count below'
+      : 'Standard bucket';
+
   return (
     <Screen title="Receiving" scroll={false}>
       <View style={{ padding: spacing.lg, gap: spacing.md }}>
         <Card>
-          <View style={s.toggleRow}>
-            <View style={s.flex}>
-              <Text style={s.toggleTitle}>Batch Receiving</Text>
-              <Text style={s.toggleSub}>
-                {batchMode ? 'Keeps these settings for the next scan' : 'Single bucket mode'}
-              </Text>
-            </View>
-            <Switch value={batchMode} onValueChange={setBatchMode} />
-          </View>
+          <Text style={s.toggleTitle}>Now receiving</Text>
+          <Text style={s.summaryValue}>{activeSummary}</Text>
         </Card>
 
         <Card>
@@ -145,5 +146,6 @@ const s = StyleSheet.create({
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   toggleTitle: { fontFamily: fontFamily.semiBold, fontSize: fontSize.md, color: COLORS.text },
   toggleSub: { fontSize: fontSize.sm, color: COLORS.textMuted, marginTop: 2 },
+  summaryValue: { fontSize: fontSize.md, color: COLORS.text, marginTop: 2 },
   help: { fontSize: 12, color: COLORS.textMuted, marginTop: spacing.xs },
 });

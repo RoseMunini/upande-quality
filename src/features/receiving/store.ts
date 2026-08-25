@@ -6,19 +6,15 @@ type Outcome =
   | { ok: false; message: string };
 
 type State = {
-  // Batch mode: settings below persist across scans so the QC can scan
-  // bucket after bucket without re-entering them. Single mode: settings
-  // reset back to defaults after each receive.
-  batchMode: boolean;
-  setBatchMode: (v: boolean) => void;
-
+  // Settings below always persist across scans so the QC can scan bucket
+  // after bucket without re-entering them — cleared only when the QC
+  // changes them (or turns the toggle off) themselves.
   isBunched: boolean;
   setIsBunched: (v: boolean) => void;
   bunchSize: string;
   setBunchSize: (v: string) => void;
   numberOfBunches: string;
   setNumberOfBunches: (v: string) => void;
-  resetBunchSettings: () => void;
 
   // Balance: an end-of-harvest bucket carrying less than the item's standard
   // bucket rate. Only applies to unbunched receiving — mutually exclusive
@@ -27,29 +23,23 @@ type State = {
   setIsBalance: (v: boolean) => void;
   balanceQty: string;
   setBalanceQty: (v: string) => void;
-  resetBalanceSettings: () => void;
 
   receiving: boolean;
   receiveBucket: (bucketId: string) => Promise<Outcome>;
 };
 
 export const useReceivingStore = create<State>((set, get) => ({
-  batchMode: false,
-  setBatchMode: (v) => set({ batchMode: v }),
-
   isBunched: false,
   setIsBunched: (v) => set(v ? { isBunched: true, isBalance: false, balanceQty: '' } : { isBunched: false }),
   bunchSize: '',
   setBunchSize: (v) => set({ bunchSize: v }),
   numberOfBunches: '',
   setNumberOfBunches: (v) => set({ numberOfBunches: v }),
-  resetBunchSettings: () => set({ isBunched: false, bunchSize: '', numberOfBunches: '' }),
 
   isBalance: false,
   setIsBalance: (v) => set(v ? { isBalance: true, isBunched: false } : { isBalance: false }),
   balanceQty: '',
   setBalanceQty: (v) => set({ balanceQty: v }),
-  resetBalanceSettings: () => set({ isBalance: false, balanceQty: '' }),
 
   receiving: false,
   receiveBucket: async (bucketId) => {
@@ -64,10 +54,6 @@ export const useReceivingStore = create<State>((set, get) => ({
     });
     set({ receiving: false });
     if (outcome.kind === 'error') return { ok: false, message: outcome.message };
-    if (!get().batchMode) {
-      get().resetBunchSettings();
-      get().resetBalanceSettings();
-    }
     return {
       ok: true,
       variety: outcome.variety,
