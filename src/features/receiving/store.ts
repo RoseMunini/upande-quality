@@ -2,8 +2,9 @@ import { create } from 'zustand';
 import { receivingRepository } from './repository';
 
 type Outcome =
-  | { ok: true; variety: string; greenhouse: string; qty: number; overrideApplied: boolean }
-  | { ok: false; message: string };
+  | { kind: 'ok'; variety: string; greenhouse: string; qty: number; overrideApplied: boolean }
+  | { kind: 'needs_manual_qty'; variety: string; greenhouse: string }
+  | { kind: 'error'; message: string };
 
 type State = {
   // Settings below always persist across scans so the QC can scan bucket
@@ -25,7 +26,10 @@ type State = {
   setBalanceQty: (v: string) => void;
 
   receiving: boolean;
-  receiveBucket: (bucketId: string) => Promise<Outcome>;
+  /** manualQty, when passed, forces that exact stem count (uncapped) —
+   *  used to resubmit a Spray Roses bucket after the backend reports it
+   *  needs a manual count instead of using a fixed bucket rate. */
+  receiveBucket: (bucketId: string, manualQty?: number) => Promise<Outcome>;
 };
 
 export const useReceivingStore = create<State>((set, get) => ({
@@ -42,7 +46,7 @@ export const useReceivingStore = create<State>((set, get) => ({
   setBalanceQty: (v) => set({ balanceQty: v }),
 
   receiving: false,
-  receiveBucket: async (bucketId) => {
+  receiveBucket: async (bucketId, manualQty) => {
     const { isBunched, bunchSize, numberOfBunches, isBalance, balanceQty } = get();
     set({ receiving: true });
     const outcome = await receivingRepository.receiveBucket({
@@ -50,12 +54,15 @@ export const useReceivingStore = create<State>((set, get) => ({
       isBunched,
       bunchSize: isBunched ? parseFloat(bunchSize) : undefined,
       numberOfBunches: isBunched ? parseFloat(numberOfBunches) : undefined,
-      overrideQty: !isBunched && isBalance ? parseFloat(balanceQty) : undefined,
+      overrideQty: manualQty ?? (!isBunched && isBalance ? parseFloat(balanceQty) : undefined),
     });
     set({ receiving: false });
-    if (outcome.kind === 'error') return { ok: false, message: outcome.message };
+    if (outcome.kind === 'error') return { kind: 'error', message: outcome.message };
+    if (outcome.kind === 'needs_manual_qty') {
+      return { kind: 'needs_manual_qty', variety: outcome.variety, greenhouse: outcome.greenhouse };
+    }
     return {
-      ok: true,
+      kind: 'ok',
       variety: outcome.variety,
       greenhouse: outcome.greenhouse,
       qty: outcome.qty,

@@ -7,6 +7,8 @@ export type RawReceiveResult = {
   qty?: number;
   is_bunched?: boolean;
   override_applied?: boolean;
+  requires_manual_qty?: boolean;
+  item_group?: string | null;
   message?: string;
 };
 

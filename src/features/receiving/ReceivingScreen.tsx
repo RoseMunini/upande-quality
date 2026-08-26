@@ -1,7 +1,8 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import { Screen } from '@/src/core/ui/Screen';
 import { Card } from '@/src/core/ui/Card';
+import { Button } from '@/src/core/ui/Button';
 import { Dropdown } from '@/src/core/ui/Dropdown';
 import { LabeledInput } from '@/src/core/ui/LabeledInput';
 import { ScanField, type ScanFieldHandle } from '@/src/core/scanning/ScanField';
@@ -30,6 +31,11 @@ export function ReceivingScreen() {
   const receiving = useReceivingStore((s) => s.receiving);
   const receiveBucket = useReceivingStore((s) => s.receiveBucket);
 
+  const [pendingSpray, setPendingSpray] = useState<{ bucketId: string; variety: string; greenhouse: string } | null>(
+    null,
+  );
+  const [sprayQty, setSprayQty] = useState('');
+
   const onScan = async (raw: string) => {
     const bucketId = raw.trim();
     if (!bucketId) return;
@@ -44,13 +50,43 @@ export function ReceivingScreen() {
       return;
     }
     const outcome = await receiveBucket(bucketId);
-    if (!outcome.ok) {
+    if (outcome.kind === 'error') {
       showError(outcome.message);
       focusWhenReady(scanRef);
       return;
     }
+    if (outcome.kind === 'needs_manual_qty') {
+      setSprayQty('');
+      setPendingSpray({ bucketId, variety: outcome.variety, greenhouse: outcome.greenhouse });
+      return;
+    }
     const label = outcome.overrideApplied ? 'Balance bucket received' : `${bucketId} received`;
     showSuccess(`${label} — ${outcome.qty} stems (${outcome.variety}).`);
+    focusWhenReady(scanRef);
+  };
+
+  const confirmSprayQty = async () => {
+    if (!pendingSpray) return;
+    const qty = parseFloat(sprayQty);
+    if (!sprayQty.trim() || !(qty > 0)) {
+      showError('Enter the actual stem count for this Spray Roses bucket.');
+      return;
+    }
+    const outcome = await receiveBucket(pendingSpray.bucketId, qty);
+    if (outcome.kind === 'error') {
+      showError(outcome.message);
+      return;
+    }
+    if (outcome.kind === 'needs_manual_qty') return;
+    setPendingSpray(null);
+    setSprayQty('');
+    showSuccess(`${pendingSpray.bucketId} received — ${outcome.qty} stems (${outcome.variety}).`);
+    focusWhenReady(scanRef);
+  };
+
+  const cancelSprayQty = () => {
+    setPendingSpray(null);
+    setSprayQty('');
     focusWhenReady(scanRef);
   };
 
@@ -125,13 +161,34 @@ export function ReceivingScreen() {
           </Card>
         ) : null}
 
+        {pendingSpray ? (
+          <Card title="Spray Roses — Enter Stem Count">
+            <Text style={s.toggleSub}>
+              {pendingSpray.bucketId} · {pendingSpray.variety}
+              {pendingSpray.greenhouse ? ` · ${pendingSpray.greenhouse}` : ''}
+            </Text>
+            <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
+              <LabeledInput
+                label="Stem count"
+                value={sprayQty}
+                onChangeText={(t) => setSprayQty(t.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                placeholder="e.g. 140"
+                autoFocus
+              />
+              <Button label={receiving ? 'Receiving…' : 'Confirm'} loading={receiving} onPress={confirmSprayQty} />
+              <Button label="Cancel" variant="outline" onPress={cancelSprayQty} disabled={receiving} />
+            </View>
+          </Card>
+        ) : null}
+
         <Card title="Scan Bucket QR">
           <ScanField
             ref={scanRef}
             onScan={onScan}
             autoFocus
             placeholder="Scan or type bucket"
-            editable={!receiving}
+            editable={!receiving && !pendingSpray}
             showSoftKeyboard
           />
           {receiving ? <Text style={s.help}>Receiving…</Text> : null}
