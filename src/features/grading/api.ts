@@ -37,6 +37,15 @@ export const gradingApi = {
     });
   },
 
+  listReceivedVarieties(date: string): Promise<MethodResponse<{ message?: RawVariety[] }>> {
+    return api({
+      method: 'POST',
+      url: '/api/method/list_received_varieties',
+      data: { date },
+      validateStatus: () => true,
+    });
+  },
+
   lookupEmployee(employeeId: string): Promise<MethodResponse<RawEmployeeLookup>> {
     return api({
       method: 'POST',

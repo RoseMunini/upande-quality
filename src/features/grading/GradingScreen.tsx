@@ -64,8 +64,8 @@ export function GradingScreen() {
   const [rejectDate, setRejectDate] = useState(todayIso);
 
   useEffect(() => {
-    if (mode === 'reject') loadVarieties();
-  }, [mode, loadVarieties]);
+    if (mode === 'reject') loadVarieties(rejectDate);
+  }, [mode, rejectDate, loadVarieties]);
 
   useFocusEffect(() => {
     if (mode !== 'pass') return;
@@ -201,7 +201,14 @@ export function GradingScreen() {
         ) : (
           <>
             <Card title="Date">
-              <CalendarPicker label="" value={rejectDate} onChange={setRejectDate} />
+              <CalendarPicker
+                label=""
+                value={rejectDate}
+                onChange={(date) => {
+                  setRejectDate(date);
+                  setVariety('');
+                }}
+              />
             </Card>
 
             <Card title="Variety">
@@ -216,7 +223,7 @@ export function GradingScreen() {
               {varietiesError ? (
                 <>
                   <Alert tone="danger">{varietiesError}</Alert>
-                  <Button label="Retry" variant="outline" onPress={loadVarieties} />
+                  <Button label="Retry" variant="outline" onPress={() => loadVarieties(rejectDate)} />
                 </>
               ) : null}
             </Card>

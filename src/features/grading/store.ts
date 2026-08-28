@@ -11,7 +11,8 @@ type State = {
   varieties: Variety[];
   varietiesLoading: boolean;
   varietiesError: string | null;
-  loadVarieties: () => Promise<void>;
+  varietiesDate: string | null;
+  loadVarieties: (date: string) => Promise<void>;
 
   graderName: string | null;
   graderLookupLoading: boolean;
@@ -34,19 +35,20 @@ export const useGradingStore = create<State>((set, get) => ({
   varieties: [],
   varietiesLoading: false,
   varietiesError: null,
+  varietiesDate: null,
 
   graderName: null,
   graderLookupLoading: false,
 
-  loadVarieties: async () => {
-    if (get().varieties.length > 0 || get().varietiesLoading) return;
+  loadVarieties: async (date) => {
+    if ((get().varietiesDate === date && get().varieties.length > 0) || get().varietiesLoading) return;
     set({ varietiesLoading: true, varietiesError: null });
-    const outcome = await gradingRepository.listVarieties();
+    const outcome = await gradingRepository.listReceivedVarieties(date);
     if (outcome.kind === 'error') {
       set({ varietiesLoading: false, varietiesError: outcome.message });
       return;
     }
-    set({ varieties: outcome.varieties, varietiesLoading: false, varietiesError: null });
+    set({ varieties: outcome.varieties, varietiesLoading: false, varietiesError: null, varietiesDate: date });
   },
 
   lookupGrader: async (employeeId) => {

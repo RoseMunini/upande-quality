@@ -36,6 +36,17 @@ export const gradingRepository = {
     }
   },
 
+  async listReceivedVarieties(date: string): Promise<VarietiesOutcome> {
+    try {
+      const res = await gradingApi.listReceivedVarieties(date);
+      if (isFailure(res)) return { kind: 'error', message: res.error || 'Failed to load received varieties.' };
+      const varieties = (res.message ?? []).map((v) => ({ name: v.name, itemName: v.item_name || v.name }));
+      return { kind: 'ok', varieties };
+    } catch (err) {
+      return { kind: 'error', message: err instanceof Error ? err.message : 'Failed to load received varieties.' };
+    }
+  },
+
   async lookupEmployee(employeeId: string): Promise<EmployeeLookupOutcome> {
     try {
       const res = await gradingApi.lookupEmployee(employeeId);
