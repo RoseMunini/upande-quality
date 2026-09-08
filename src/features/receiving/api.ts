@@ -24,7 +24,7 @@ export const receivingApi = {
   }): Promise<MethodResponse<RawReceiveResult>> {
     return api({
       method: 'POST',
-      url: '/api/method/receiving_entry',
+      url: '/api/method/qc_app_receiving_entry',
       data: {
         bucket_id: params.bucketId,
         is_bunched: params.isBunched,
