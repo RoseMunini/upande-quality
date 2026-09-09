@@ -40,7 +40,7 @@ export const traceabilityApi = {
   getHistory(refId: string): Promise<MethodResponse<RawTraceability>> {
     return api({
       method: 'POST',
-      url: '/api/method/get_traceability_history',
+      url: '/api/method/qc_traceability_history',
       data: { ref_id: refId },
       validateStatus: () => true,
     });
