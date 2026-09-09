@@ -73,6 +73,33 @@ function isNetworkError(err: AxiosError): boolean {
   return false;
 }
 
+/** Frappe's `_server_messages` is a JSON-encoded array of JSON-encoded
+ *  message objects (each usually `{ message, title, indicator }`) — the
+ *  human-readable text set via `frappe.throw`/`msgprint`. Returns the first
+ *  message found, or null if the field is absent or fails to parse. */
+function firstServerMessage(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  try {
+    const entries = JSON.parse(raw) as unknown[];
+    for (const entry of entries) {
+      const parsed = typeof entry === 'string' ? JSON.parse(entry) : entry;
+      if (parsed && typeof parsed === 'object' && typeof (parsed as { message?: string }).message === 'string') {
+        return (parsed as { message: string }).message;
+      }
+    }
+  } catch {
+    // Malformed/unexpected shape — fall through to other sources.
+  }
+  return null;
+}
+
+const STATUS_FALLBACKS: Record<number, string> = {
+  401: 'Your session has expired. Please log in again.',
+  403: "You don't have permission to do this. Contact your administrator.",
+  404: 'Not found.',
+  500: 'Something went wrong on the server. Please try again.',
+};
+
 export function mapAxiosError(err: unknown): HttpError {
   if (isAxiosError(err)) {
     if (isNetworkError(err)) {
@@ -86,9 +113,19 @@ export function mapAxiosError(err: unknown): HttpError {
     const body = err.response?.data;
     let message = err.message;
     if (body && typeof body === 'object') {
-      const exc = body as { exc_type?: string; _server_messages?: string; message?: string };
-      if (exc.message) message = exc.message;
-      else if (exc.exc_type) message = exc.exc_type;
+      const exc = body as { exc_type?: string; exception?: string; _server_messages?: string; message?: string };
+      const serverMessage = firstServerMessage(exc._server_messages);
+      if (serverMessage) {
+        message = serverMessage;
+      } else if (exc.message) {
+        message = exc.message;
+      } else if (exc.exception) {
+        // "frappe.exceptions.PermissionError: You do not have enough permissions..."
+        // — strip the leading "SomeException: " prefix, keep the readable part.
+        message = exc.exception.replace(/^[\w.]+:\s*/, '') || exc.exception;
+      } else {
+        message = STATUS_FALLBACKS[status] ?? exc.exc_type ?? message;
+      }
     }
     return new HttpError(status, message, body);
   }
