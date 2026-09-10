@@ -24,7 +24,7 @@ export const discardsApi = {
   discardBucket(bucketId: string): Promise<MethodResponse<RawDiscardResponse>> {
     return api({
       method: 'POST',
-      url: '/api/method/createDiscardEntry',
+      url: '/api/method/qc_discard_entry',
       data: { bucket_id: bucketId },
       validateStatus: () => true,
     });
