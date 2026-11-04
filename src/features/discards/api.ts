@@ -1,17 +1,24 @@
 import { api } from '@/src/core/api/client';
 
+export type RawDiscardRequestStatus = 'Waiting' | 'Pending Approval';
+
 export type RawDiscardPayload = {
   bucket_id?: string;
-  age_days?: number;
   variety?: string;
   greenhouse?: string;
   stems?: number;
-  discard_entry?: string;
+  request?: string;
+  request_status?: RawDiscardRequestStatus;
+  coldroom_entry?: string;
+  eligible_from?: string;
+  hours_remaining?: number;
 };
 
 export type RawDiscardResponse = {
   data?: {
-    status?: 'success' | 'failed' | 'error';
+    // 'requested' — a QC Discard Request was raised; the actual discard only
+    // happens once it's approved in the ERP after 72h in the coldroom.
+    status?: 'requested' | 'failed' | 'error';
     reason?: string;
     message?: string;
     payload?: RawDiscardPayload;

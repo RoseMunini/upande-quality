@@ -52,7 +52,7 @@ const CARDS: NavCard[] = [
   {
     icon: 'trash-outline',
     title: 'Low-Market Rejects',
-    description: 'Scan a bucket to mark it as a low-market reject.',
+    description: 'Scan a bucket to mark it as a low-market reject for approval.',
     href: '/discards',
   },
   {

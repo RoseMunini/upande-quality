@@ -12,7 +12,7 @@ export function DiscardsScreen() {
   const scanRef = useRef<ScanFieldHandle>(null);
   const { showSuccess, showError } = useToast();
 
-  const discardedCount = useDiscardsStore((s) => s.discardedCount);
+  const markedCount = useDiscardsStore((s) => s.markedCount);
   const discarding = useDiscardsStore((s) => s.discarding);
   const discardBucket = useDiscardsStore((s) => s.discardBucket);
 
@@ -22,8 +22,12 @@ export function DiscardsScreen() {
     const outcome = await discardBucket(bucketId);
     if (!outcome.ok) {
       showError(outcome.message);
+    } else if (outcome.pendingApproval) {
+      showSuccess(`${bucketId} sent for discard approval — ${outcome.stems} stems (${outcome.variety}).`);
     } else {
-      showSuccess(`${bucketId} marked as a low-market reject — ${outcome.stems} stems (${outcome.variety}).`);
+      showSuccess(
+        `${bucketId} marked as a low-market reject — goes for approval once it has 72h in the coldroom (~${outcome.hoursRemaining}h).`,
+      );
     }
     focusWhenReady(scanRef);
   };
@@ -41,7 +45,7 @@ export function DiscardsScreen() {
             showSoftKeyboard
           />
           <Text style={{ fontSize: fontSize.sm, color: COLORS.textMuted, marginTop: spacing.sm }}>
-            {discardedCount} low-market rejects this session
+            {markedCount} buckets marked this session
           </Text>
         </Card>
       </View>
