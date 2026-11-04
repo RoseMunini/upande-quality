@@ -12,6 +12,7 @@ type State = {
   varietiesLoading: boolean;
   varietiesError: string | null;
   varietiesDate: string | null;
+  varietiesInFlightDate: string | null;
   loadVarieties: (date: string) => Promise<void>;
 
   graderName: string | null;
@@ -36,19 +37,29 @@ export const useGradingStore = create<State>((set, get) => ({
   varietiesLoading: false,
   varietiesError: null,
   varietiesDate: null,
+  varietiesInFlightDate: null,
 
   graderName: null,
   graderLookupLoading: false,
 
   loadVarieties: async (date) => {
-    if ((get().varietiesDate === date && get().varieties.length > 0) || get().varietiesLoading) return;
-    set({ varietiesLoading: true, varietiesError: null });
+    if (get().varietiesDate === date && get().varieties.length > 0) return;
+    if (get().varietiesInFlightDate === date) return;
+    set({ varietiesLoading: true, varietiesError: null, varietiesInFlightDate: date });
     const outcome = await gradingRepository.listReceivedVarieties(date);
+    // A newer date may have been selected while this request was in flight — ignore this stale response.
+    if (get().varietiesInFlightDate !== date) return;
     if (outcome.kind === 'error') {
-      set({ varietiesLoading: false, varietiesError: outcome.message });
+      set({ varietiesLoading: false, varietiesError: outcome.message, varietiesInFlightDate: null });
       return;
     }
-    set({ varieties: outcome.varieties, varietiesLoading: false, varietiesError: null, varietiesDate: date });
+    set({
+      varieties: outcome.varieties,
+      varietiesLoading: false,
+      varietiesError: null,
+      varietiesDate: date,
+      varietiesInFlightDate: null,
+    });
   },
 
   lookupGrader: async (employeeId) => {
