@@ -14,8 +14,8 @@ export type RawDiscardPayload = {
 
 export type RawDiscardResponse = {
   data?: {
-    // 'discarded' — the Discard stock entry was posted. Buckets under 24h on
-    // the shelf come back as 'failed' with reason 'under_72h' (code kept from the old 72h rule).
+    // 'discarded' — the Discard stock entry was posted. Buckets under 12h on
+    // the shelf come back as 'failed' with reason 'under_72h' (code kept from the original 72h rule).
     status?: 'discarded' | 'failed' | 'error';
     reason?: string;
     message?: string;
