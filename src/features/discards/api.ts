@@ -2,6 +2,7 @@ import { api } from '@/src/core/api/client';
 
 export type RawDiscardPayload = {
   bucket_id?: string;
+  bunch_id?: string;
   variety?: string;
   greenhouse?: string;
   stems?: number;
@@ -32,6 +33,18 @@ export const discardsApi = {
       method: 'POST',
       url: '/api/method/qc_discard_entry',
       data: { bucket_id: bucketId },
+      validateStatus: () => true,
+    });
+  },
+
+  // Graded bunch in the graded coldstore (XFL Graded Sold): the server posts a
+  // Discard entry for exactly what its Grading entry moved in. Refuses
+  // not_a_bunch / not_graded / already_packed / already_discarded.
+  discardBunch(bunchId: string): Promise<MethodResponse<RawDiscardResponse>> {
+    return api({
+      method: 'POST',
+      url: '/api/method/qc_discard_bunch',
+      data: { bunch_id: bunchId },
       validateStatus: () => true,
     });
   },

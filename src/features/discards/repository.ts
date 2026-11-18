@@ -1,4 +1,4 @@
-import { discardsApi } from './api';
+import { discardsApi, type MethodResponse, type RawDiscardPayload, type RawDiscardResponse } from './api';
 
 export type DiscardOutcome =
   | {
@@ -10,16 +10,30 @@ export type DiscardOutcome =
     }
   | { kind: 'error'; message: string };
 
+export type BunchDiscardOutcome =
+  | { kind: 'ok'; bunchId: string; variety: string; stems: number }
+  | { kind: 'error'; message: string };
+
+/** Bunch labels are BUNCH-<n>; coldroom bucket labels are plain numbers. */
+export const isBunchId = (code: string) => /^BUNCH-/i.test(code.trim());
+
+type Discarded = { error: string } | { payload: RawDiscardPayload };
+
+const readDiscarded = (res: MethodResponse<RawDiscardResponse>, fallback: string): Discarded => {
+  if (res.error) return { error: res.error };
+  const data = res.data;
+  if (!data || data.status !== 'discarded') {
+    return { error: data?.message ?? fallback };
+  }
+  return { payload: data.payload ?? {} };
+};
+
 export const discardsRepository = {
   async discardBucket(bucketId: string): Promise<DiscardOutcome> {
     try {
-      const res = await discardsApi.discardBucket(bucketId);
-      if (res.error) return { kind: 'error', message: res.error };
-      const data = res.data;
-      if (!data || data.status !== 'discarded') {
-        return { kind: 'error', message: data?.message ?? 'Failed to discard bucket.' };
-      }
-      const payload = data.payload ?? {};
+      const r = readDiscarded(await discardsApi.discardBucket(bucketId), 'Failed to discard bucket.');
+      if ('error' in r) return { kind: 'error', message: r.error };
+      const payload = r.payload;
       return {
         kind: 'ok',
         bucketId: payload.bucket_id ?? bucketId,
@@ -29,6 +43,22 @@ export const discardsRepository = {
       };
     } catch (err) {
       return { kind: 'error', message: err instanceof Error ? err.message : 'Failed to discard bucket.' };
+    }
+  },
+
+  async discardBunch(bunchId: string): Promise<BunchDiscardOutcome> {
+    try {
+      const r = readDiscarded(await discardsApi.discardBunch(bunchId), 'Failed to discard bunch.');
+      if ('error' in r) return { kind: 'error', message: r.error };
+      const payload = r.payload;
+      return {
+        kind: 'ok',
+        bunchId: payload.bunch_id ?? bunchId,
+        variety: payload.variety ?? '',
+        stems: payload.stems ?? 0,
+      };
+    } catch (err) {
+      return { kind: 'error', message: err instanceof Error ? err.message : 'Failed to discard bunch.' };
     }
   },
 };
