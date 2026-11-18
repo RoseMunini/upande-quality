@@ -52,7 +52,7 @@ const CARDS: NavCard[] = [
   {
     icon: 'trash-outline',
     title: 'Low-Market Rejects',
-    description: 'Discard a low-market bucket once it has been on the shelf for 12 hours.',
+    description: 'Scan a low-market bucket to discard it.',
     href: '/discards',
   },
   {
